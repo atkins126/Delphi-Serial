@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{5BEA2875-B525-4723-BAA6-6CA7FF57E57E}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="project\DelphiSerialPkg.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="project\DelphiSerialUnitTest.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="DelphiSerialPkg">
+        <MSBuild Projects="project\DelphiSerialPkg.dproj"/>
+    </Target>
+    <Target Name="DelphiSerialPkg:Clean">
+        <MSBuild Projects="project\DelphiSerialPkg.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DelphiSerialPkg:Make">
+        <MSBuild Projects="project\DelphiSerialPkg.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DelphiSerialUnitTest">
+        <MSBuild Projects="project\DelphiSerialUnitTest.dproj"/>
+    </Target>
+    <Target Name="DelphiSerialUnitTest:Clean">
+        <MSBuild Projects="project\DelphiSerialUnitTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DelphiSerialUnitTest:Make">
+        <MSBuild Projects="project\DelphiSerialUnitTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="DelphiSerialPkg;DelphiSerialUnitTest"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="DelphiSerialPkg:Clean;DelphiSerialUnitTest:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="DelphiSerialPkg:Make;DelphiSerialUnitTest:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

@@ -1,0 +1,17 @@
+build
+__history
+__recovery
+.scannerwork
+*~
+*.bak
+*.dcu
+*.dll
+*.drc
+*.exe
+*.identcache
+*.local
+*.log
+*.map
+*.res
+*.stat
+*.tvsconfig

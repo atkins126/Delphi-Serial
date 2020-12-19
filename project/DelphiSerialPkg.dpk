@@ -1,0 +1,45 @@
+package DelphiSerialPkg;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  Delphi.Serial.RttiVisitor in '..\source\Delphi.Serial.RttiVisitor.pas',
+  Delphi.Serial.RttiObserver in '..\source\Delphi.Serial.RttiObserver.pas',
+  Delphi.Serial.Protobuf in '..\source\Delphi.Serial.Protobuf.pas',
+  Delphi.Serial.Json in '..\source\Delphi.Serial.Json.pas',
+  Delphi.Serial.Bson in '..\source\Delphi.Serial.Bson.pas',
+  Delphi.Serial.Xml in '..\source\Delphi.Serial.Xml.pas',
+  Delphi.Serial in '..\source\Delphi.Serial.pas',
+  Delphi.Serial.Yaml in '..\source\Delphi.Serial.Yaml.pas',
+  Delphi.Serial.Toml in '..\source\Delphi.Serial.Toml.pas',
+  Delphi.Serial.Avro in '..\source\Delphi.Serial.Avro.pas';
+
+end.
