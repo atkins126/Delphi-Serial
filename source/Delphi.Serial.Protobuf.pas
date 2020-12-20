@@ -1,5 +1,7 @@
 unit Delphi.Serial.Protobuf;
 
+{$SCOPEDENUMS ON}
+
 interface
 
 uses
@@ -8,14 +10,43 @@ uses
 
 type
 
-  FixedInt32  = type Int32;
-  FixedInt64  = type Int64;
+  FieldNumber = 1 .. 536870911;
+  SignedInt32 = type Int32;
+  SignedInt64 = type Int64;
   FixedUInt32 = type UInt32;
   FixedUInt64 = type UInt64;
+
+  ProtobufAttribute = class(TCustomAttribute)
+    private
+      FFieldNumber: FieldNumber;
+
+    public
+      constructor Create(AFieldNumber: FieldNumber);
+
+      property FieldNumber: FieldNumber read FFieldNumber;
+  end;
 
   TSerializer = class(TInterfacedObject)
     protected
       FStream: TStream;
+
+      procedure Parse(var AValue: Int32); overload; inline;
+      procedure Parse(var AValue: Int64); overload; inline;
+      procedure Parse(var AValue: UInt32); overload; inline;
+      procedure Parse(var AValue: UInt64); overload; inline;
+      procedure Parse(var AValue: SignedInt32); overload; inline;
+      procedure Parse(var AValue: SignedInt64); overload; inline;
+      procedure Parse(var AValue: FixedUInt32); overload; inline;
+      procedure Parse(var AValue: FixedUInt64); overload; inline;
+
+      procedure Pack(AValue: Int32); overload; inline;
+      procedure Pack(AValue: Int64); overload; inline;
+      procedure Pack(AValue: UInt32); overload; inline;
+      procedure Pack(AValue: UInt64); overload; inline;
+      procedure Pack(AValue: SignedInt32); overload; inline;
+      procedure Pack(AValue: SignedInt64); overload; inline;
+      procedure Pack(AValue: FixedUInt32); overload; inline;
+      procedure Pack(AValue: FixedUInt64); overload; inline;
 
     public
       property Stream: TStream read FStream write FStream;
@@ -114,6 +145,169 @@ type
   end;
 
 implementation
+
+uses
+  System.SysUtils;
+
+type
+
+  ESerializationError = class(Exception);
+
+  TWireType           = (VarInt = 0, _64bit = 1, LengthPrefixed = 2, _32bit = 5);
+
+  VarInt32 = record
+    const
+      CMaxLength = 5;
+
+    public
+      FBytes: array [0 .. CMaxLength - 1] of Byte;
+      FCount: Integer;
+
+    private
+      class function BuiltinBsr(AValue: UInt32): Integer; static;
+
+    public
+      constructor Create(AValue: UInt32);
+      function Extract: UInt32;
+  end;
+
+  VarInt64 = record
+    const
+      CMaxLength = 10;
+
+    public
+      FBytes: array [0 .. CMaxLength - 1] of Byte;
+      FCount: Integer;
+
+    private
+      class function BuiltinBsr(AValue: UInt64): Integer; static;
+
+    public
+      constructor Create(AValue: UInt64);
+      function Extract: UInt64;
+  end;
+      
+  TIntegerUtils = class
+    public
+      class function ZigZag(AValue: Int32): UInt32; overload; static; inline;
+      class function ZigZag(AValue: Int64): UInt64; overload; static; inline;
+      class function ZigZag(AValue: UInt32): Int32; overload; static; inline;
+      class function ZigZag(AValue: UInt64): Int64; overload; static; inline;
+  end;
+
+{ ProtobufAttribute }
+
+constructor ProtobufAttribute.Create(AFieldNumber: FieldNumber);
+begin
+  FFieldNumber := AFieldNumber;
+end;
+
+{ TSerializer }
+
+procedure TSerializer.Pack(AValue: Int32);
+begin
+  if AValue < 0 then
+    Pack(Int64(AValue))
+  else
+    Pack(PUInt32(Addr(AValue))^);
+end;
+
+procedure TSerializer.Pack(AValue: Int64);
+begin
+  Pack(PUInt64(Addr(AValue))^);
+end;
+
+procedure TSerializer.Pack(AValue: UInt32);
+var
+  Target: VarInt32;
+begin
+  Target := VarInt32.Create(AValue);
+  FStream.Write(Target, Target.FCount);
+end;
+
+procedure TSerializer.Pack(AValue: UInt64);
+var
+  Target: VarInt64;
+begin
+  Target := VarInt64.Create(AValue);
+  FStream.Write(Target, Target.FCount);
+end;
+
+procedure TSerializer.Pack(AValue: FixedUInt32);
+begin
+  FStream.Write(AValue, SizeOf(AValue));
+end;
+
+procedure TSerializer.Pack(AValue: FixedUInt64);
+begin
+  FStream.Write(AValue, SizeOf(AValue));
+end;
+
+procedure TSerializer.Pack(AValue: SignedInt32);
+begin
+  Pack(TIntegerUtils.ZigZag(AValue));
+end;
+
+procedure TSerializer.Pack(AValue: SignedInt64);
+begin
+  Pack(TIntegerUtils.ZigZag(AValue));
+end;
+
+procedure TSerializer.Parse(var AValue: Int32);
+begin
+  Parse(PUInt32(Addr(AValue))^);
+  if AValue < 0 then
+    FStream.Seek(VarInt32.CMaxLength, TSeekOrigin.soCurrent); // skip high bytes of encoded Int64
+end;
+
+procedure TSerializer.Parse(var AValue: Int64);
+begin
+  Parse(PUInt64(Addr(AValue))^);
+end;
+
+procedure TSerializer.Parse(var AValue: UInt32);
+var
+  Source: VarInt32;
+begin
+  FStream.Read(Source, Source.CMaxLength);
+  AValue := Source.Extract;
+  FStream.Seek(Source.FCount - Source.CMaxLength, TSeekOrigin.soCurrent);
+end;
+
+procedure TSerializer.Parse(var AValue: UInt64);
+var
+  Source: VarInt64;
+begin
+  FStream.Read(Source, Source.CMaxLength);
+  AValue := Source.Extract;
+  FStream.Seek(Source.FCount - Source.CMaxLength, TSeekOrigin.soCurrent);
+end;
+
+procedure TSerializer.Parse(var AValue: FixedUInt32);
+begin
+  FStream.Read(AValue, SizeOf(AValue));
+end;
+
+procedure TSerializer.Parse(var AValue: FixedUInt64);
+begin
+  FStream.Read(AValue, SizeOf(AValue));
+end;
+
+procedure TSerializer.Parse(var AValue: SignedInt32);
+var
+  Value: UInt32;
+begin
+  Parse(Value);
+  AValue := TIntegerUtils.ZigZag(Value);
+end;
+
+procedure TSerializer.Parse(var AValue: SignedInt64);
+var
+  Value: UInt64;
+begin
+  Parse(Value);
+  AValue := TIntegerUtils.ZigZag(Value);
+end;
 
 { TInputSerializer }
 
@@ -489,6 +683,155 @@ end;
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
 
+end;
+    
+{ VarInt32 }
+
+class function VarInt32.BuiltinBsr(AValue: UInt32): Integer;
+asm
+{$IFDEF CPUX64}
+  BSR     EAX,ECX
+{$ELSE}
+  BSR     EAX,EAX
+{$ENDIF}
+end;
+
+constructor VarInt32.Create(AValue: UInt32);
+label
+  Count1, Count2, Count3, Count4, Count5;
+begin
+  FCount := BuiltinBsr(AValue) div 8 + 1;
+  if FCount = 1 then
+    goto Count1
+  else if FCount = 2 then
+    goto Count2
+  else if FCount = 3 then
+    goto Count3
+  else if FCount = 4 then
+    goto Count4;
+
+Count5:
+  FBytes[4] := (AValue shr 28) or $80;
+Count4:
+  FBytes[3] := (AValue shr 21) or $80;
+Count3:
+  FBytes[2] := (AValue shr 14) or $80;
+Count2:
+  FBytes[1] := (AValue shr 7) or $80;
+Count1:
+  FBytes[0] := AValue or $80;
+end;
+
+function VarInt32.Extract: UInt32;
+var
+  Shift: Byte;
+begin
+  Shift  := 0;
+  FCount := 0;
+  Result := FBytes[FCount] and $7F;
+  while (FCount < CMaxLength) and (FBytes[FCount] >= $80) do
+    begin
+      Inc(Shift, 7);
+      Inc(FCount);
+      Result := Result or (UInt32(FBytes[FCount] and $7F) shl Shift);
+    end;
+  Inc(FCount);
+end;
+
+{ VarInt64 }
+
+class function VarInt64.BuiltinBsr(AValue: UInt64): Integer;
+asm
+{$IFDEF CPUX64}
+  BSR     RAX,RCX
+{$ELSE}
+  BSR     RAX,RAX
+{$ENDIF}
+end;
+
+constructor VarInt64.Create(AValue: UInt64);
+label
+  Count1, Count2, Count3, Count4, Count5, Count6, Count7, Count8, Count9;
+begin
+  FCount := BuiltinBsr(AValue) div 8 + 1;
+  if FCount = 1 then
+    goto Count1
+  else if FCount = 2 then
+    goto Count2
+  else if FCount = 3 then
+    goto Count3
+  else if FCount = 4 then
+    goto Count4
+  else if FCount = 5 then
+    goto Count5
+  else if FCount = 6 then
+    goto Count6
+  else if FCount = 7 then
+    goto Count7
+  else if FCount = 8 then
+    goto Count8
+  else if FCount = 9 then
+    goto Count9;
+
+  FBytes[9]          := (AValue shr 63) or $80;
+Count9:
+  FBytes[8]          := (AValue shr 56) or $80;
+Count8:
+  FBytes[7]          := (AValue shr 49) or $80;
+Count7:
+  FBytes[6]          := (AValue shr 42) or $80;
+Count6:
+  FBytes[5]          := (AValue shr 35) or $80;
+Count5:
+  FBytes[4]          := (AValue shr 28) or $80;
+Count4:
+  FBytes[3]          := (AValue shr 21) or $80;
+Count3:
+  FBytes[2]          := (AValue shr 14) or $80;
+Count2:
+  FBytes[1]          := (AValue shr 7) or $80;
+Count1:
+  FBytes[0]          := AValue or $80;
+
+  FBytes[FCount - 1] := FBytes[FCount - 1] and $7F;
+end;
+
+function VarInt64.Extract: UInt64;
+var
+  Shift: Byte;
+begin
+  Shift  := 0;
+  FCount := 0;
+  Result := FBytes[FCount] and $7F;
+  while (FCount < CMaxLength) and (FBytes[FCount] >= $80) do
+    begin
+      Inc(Shift, 7);
+      Inc(FCount);
+      Result := Result or (UInt64(FBytes[FCount] and $7F) shl Shift);
+    end;
+  Inc(FCount);
+end;
+
+{ TIntegerUtils }
+
+class function TIntegerUtils.ZigZag(AValue: Int32): UInt32;
+begin
+  Result := (UInt32(AValue) shl 1) xor UInt32(AValue shr 31);
+end;
+
+class function TIntegerUtils.ZigZag(AValue: Int64): UInt64;
+begin
+  Result := (UInt64(AValue) shl 1) xor UInt64(AValue shr 63);
+end;
+
+class function TIntegerUtils.ZigZag(AValue: UInt32): Int32;
+begin
+  Result := Int32(AValue shr 1) xor - Int32(AValue and 1);
+end;
+
+class function TIntegerUtils.ZigZag(AValue: UInt64): Int64;
+begin
+  Result := Int64(AValue shr 1) xor - Int64(AValue and 1);
 end;
 
 end.
