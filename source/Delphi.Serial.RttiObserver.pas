@@ -35,13 +35,13 @@ type
     procedure BeginVariableArray(var ALength: Integer);
     procedure EndVariableArray;
 
-    function SkipTypeNames: Boolean;
     function SkipEnumNames: Boolean;
     function SkipRecordAttributes: Boolean;
     function SkipFieldAttributes: Boolean;
     function SkipBranch(ABranch: Integer): Boolean;
     function ByteArrayAsAWhole: Boolean;
 
+    procedure TypeKind(AKind: TTypeKind);
     procedure TypeName(const AName: string);
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);

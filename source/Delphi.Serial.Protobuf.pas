@@ -8,6 +8,11 @@ uses
 
 type
 
+  FixedInt32  = type Int32;
+  FixedInt64  = type Int64;
+  FixedUInt32 = type UInt32;
+  FixedUInt64 = type UInt64;
+
   TSerializer = class(TInterfacedObject)
     protected
       FStream: TStream;
@@ -35,20 +40,24 @@ type
       procedure Value(var AValue: AnsiString); overload;
       procedure Value(var AValue: WideString); overload;
       procedure Value(var AValue: UnicodeString); overload;
+      procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
       procedure BeginRecord(const AName: string);
       procedure EndRecord;
       procedure BeginField(const AName: string);
       procedure EndField;
-      procedure BeginArray(var ALength: Integer);
-      procedure EndArray;
+      procedure BeginFixedArray(ALength: Integer);
+      procedure EndFixedArray;
+      procedure BeginVariableArray(var ALength: Integer);
+      procedure EndVariableArray;
 
-      function SkipTypeNames: Boolean;
       function SkipEnumNames: Boolean;
       function SkipRecordAttributes: Boolean;
       function SkipFieldAttributes: Boolean;
       function SkipBranch(ABranch: Integer): Boolean;
+      function ByteArrayAsAWhole: Boolean;
 
+      procedure TypeKind(AKind: TTypeKind);
       procedure TypeName(const AName: string);
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
@@ -77,20 +86,24 @@ type
       procedure Value(var AValue: AnsiString); overload;
       procedure Value(var AValue: WideString); overload;
       procedure Value(var AValue: UnicodeString); overload;
+      procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
       procedure BeginRecord(const AName: string);
       procedure EndRecord;
       procedure BeginField(const AName: string);
       procedure EndField;
-      procedure BeginArray(var ALength: Integer);
-      procedure EndArray;
+      procedure BeginFixedArray(ALength: Integer);
+      procedure EndFixedArray;
+      procedure BeginVariableArray(var ALength: Integer);
+      procedure EndVariableArray;
 
-      function SkipTypeNames: Boolean;
       function SkipEnumNames: Boolean;
       function SkipRecordAttributes: Boolean;
       function SkipFieldAttributes: Boolean;
       function SkipBranch(ABranch: Integer): Boolean;
+      function ByteArrayAsAWhole: Boolean;
 
+      procedure TypeKind(AKind: TTypeKind);
       procedure TypeName(const AName: string);
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
@@ -109,12 +122,12 @@ begin
 
 end;
 
-procedure TInputSerializer.BeginArray(var ALength: Integer);
+procedure TInputSerializer.BeginField(const AName: string);
 begin
 
 end;
 
-procedure TInputSerializer.BeginField(const AName: string);
+procedure TInputSerializer.BeginFixedArray(ALength: Integer);
 begin
 
 end;
@@ -122,6 +135,16 @@ end;
 procedure TInputSerializer.BeginRecord(const AName: string);
 begin
 
+end;
+
+procedure TInputSerializer.BeginVariableArray(var ALength: Integer);
+begin
+
+end;
+
+function TInputSerializer.ByteArrayAsAWhole: Boolean;
+begin
+  Result := True;
 end;
 
 constructor TInputSerializer.Create;
@@ -135,17 +158,22 @@ begin
   inherited;
 end;
 
-procedure TInputSerializer.EndArray;
-begin
-
-end;
-
 procedure TInputSerializer.EndField;
 begin
 
 end;
 
+procedure TInputSerializer.EndFixedArray;
+begin
+
+end;
+
 procedure TInputSerializer.EndRecord;
+begin
+
+end;
+
+procedure TInputSerializer.EndVariableArray;
 begin
 
 end;
@@ -175,9 +203,9 @@ begin
   Result := True;
 end;
 
-function TInputSerializer.SkipTypeNames: Boolean;
+procedure TInputSerializer.TypeKind(AKind: TTypeKind);
 begin
-  Result := True;
+
 end;
 
 procedure TInputSerializer.TypeName(const AName: string);
@@ -270,14 +298,14 @@ begin
 
 end;
 
-{ TOutputSerializer }
-
-procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
+procedure TInputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
 
 end;
 
-procedure TOutputSerializer.BeginArray(var ALength: Integer);
+{ TOutputSerializer }
+
+procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
 
 end;
@@ -287,9 +315,24 @@ begin
 
 end;
 
+procedure TOutputSerializer.BeginFixedArray(ALength: Integer);
+begin
+
+end;
+
 procedure TOutputSerializer.BeginRecord(const AName: string);
 begin
 
+end;
+
+procedure TOutputSerializer.BeginVariableArray(var ALength: Integer);
+begin
+
+end;
+
+function TOutputSerializer.ByteArrayAsAWhole: Boolean;
+begin
+  Result := True;
 end;
 
 constructor TOutputSerializer.Create;
@@ -303,17 +346,22 @@ begin
   inherited;
 end;
 
-procedure TOutputSerializer.EndArray;
-begin
-
-end;
-
 procedure TOutputSerializer.EndField;
 begin
 
 end;
 
+procedure TOutputSerializer.EndFixedArray;
+begin
+
+end;
+
 procedure TOutputSerializer.EndRecord;
+begin
+
+end;
+
+procedure TOutputSerializer.EndVariableArray;
 begin
 
 end;
@@ -343,12 +391,17 @@ begin
   Result := True;
 end;
 
-function TOutputSerializer.SkipTypeNames: Boolean;
+procedure TOutputSerializer.TypeKind(AKind: TTypeKind);
 begin
-  Result := True;
+
 end;
 
 procedure TOutputSerializer.TypeName(const AName: string);
+begin
+
+end;
+
+procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
 
 end;

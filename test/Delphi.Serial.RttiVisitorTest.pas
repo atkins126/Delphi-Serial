@@ -222,7 +222,6 @@ begin
   with FSerializer.Setup do
     begin
       WillReturnDefault('SkipBranch', False);
-      WillReturn(False).When.SkipTypeNames;
       WillReturn(False).When.SkipEnumNames;
       WillReturn(False).When.SkipRecordAttributes;
       WillReturn(False).When.SkipFieldAttributes;
@@ -280,6 +279,7 @@ begin
       Expect.Exactly(10).When.EnumName('B');
       Expect.Exactly(10).When.EnumName('C');
       Expect.Exactly(10).When.EnumName('D');
+      Expect.Exactly(35).When.TypeKind(tkEnumeration);
       Expect.Exactly(3).When.EnumName('[Unknown]');
       Expect.Exactly(10).When.TypeName('TMyType');
       Expect.Exactly(24).When.BeginFixedArray(4);

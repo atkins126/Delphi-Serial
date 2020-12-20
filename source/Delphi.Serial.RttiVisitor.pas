@@ -61,9 +61,10 @@ var
   I: Integer;
 begin
   if not Assigned(AType) then
-    Exit
-  else if not FObserver.SkipTypeNames then
-    FObserver.TypeName(AType.Name);
+    Exit;
+
+  FObserver.TypeName(AType.Name);
+  FObserver.TypeKind(AType.TypeKind);
 
   if AType is TRttiStringType then
     Visit(AInstance, AType as TRttiStringType, ACount)
