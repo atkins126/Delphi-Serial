@@ -24,18 +24,25 @@ type
     procedure Value(var AValue: AnsiString); overload;
     procedure Value(var AValue: WideString); overload;
     procedure Value(var AValue: UnicodeString); overload;
+    procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
     procedure BeginRecord(const AName: string);
     procedure EndRecord;
     procedure BeginField(const AName: string);
     procedure EndField;
-    procedure BeginArray(var ALength: Integer);
-    procedure EndArray;
+    procedure BeginFixedArray(ALength: Integer);
+    procedure EndFixedArray;
+    procedure BeginVariableArray(var ALength: Integer);
+    procedure EndVariableArray;
 
-    function SkipBranch(ABranch: Integer): Boolean;
+    function SkipTypeNames: Boolean;
     function SkipEnumNames: Boolean;
-    function SkipAttributes: Boolean;
+    function SkipRecordAttributes: Boolean;
+    function SkipFieldAttributes: Boolean;
+    function SkipBranch(ABranch: Integer): Boolean;
+    function ByteArrayAsAWhole: Boolean;
 
+    procedure TypeName(const AName: string);
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);
   end;

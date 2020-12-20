@@ -15,17 +15,23 @@ type
   DefAttribute   = class(TCustomAttribute);
   OneofAttribute = class(TCustomAttribute);
 
+  TMyRange       = 0 .. 255;
   TNoRtti        = (A = 1);
   TUInt8Enum     = (B = 0);
   TUInt16Enum    = (C, {$INCLUDE 'UInt16Enum.inc'});
   TUInt32Enum    = (D, {$INCLUDE 'UInt32Enum.inc'});
   TMyOneof       = (Bool, AChar, WChar);
+  TMyType        = type Integer;
+  TSmallSet      = set of TUInt8Enum;
+  TLargeSet      = set of TMyRange;
 
   TMyElement = record
   [Oneof]
     case FMyOneof: TMyOneof of
       TMyOneof.Bool:
-        (FBoolean: Boolean);
+        (FBoolean: Boolean;
+          FMyType: TMyType;
+          FMyRange: TMyRange);
       TMyOneof.AChar:
         (FAnsiChar: AnsiChar);
       TMyOneof.WChar:
@@ -36,6 +42,8 @@ type
   TUInt8EnumArray    = array [0 .. 1, 0 .. 1] of TUInt8Enum;
   TUInt16EnumArray   = array [0 .. 1, 0 .. 1] of TUInt16Enum;
   TUInt32EnumArray   = array [0 .. 1, 0 .. 1] of TUInt32Enum;
+  TSmallSetArray     = array [0 .. 1, 0 .. 1] of TSmallSet;
+  TLargeSetArray     = array [0 .. 1, 0 .. 1] of TLargeSet;
   Int8Array          = array [0 .. 1, 0 .. 1] of Int8;
   Int16Array         = array [0 .. 1, 0 .. 1] of Int16;
   Int32Array         = array [0 .. 1, 0 .. 1] of Int32;
@@ -60,6 +68,8 @@ type
     FArrayOfUInt8Enum: TArray<TArray<TUInt8Enum>>;
     FArrayOfUInt16Enum: TArray<TArray<TUInt16Enum>>;
     FArrayOfUInt32Enum: TArray<TArray<TUInt32Enum>>;
+    FArrayOfSmallSet: TArray<TArray<TSmallSet>>;
+    FArrayOfLargeSet: TArray<TArray<TLargeSet>>;
     FArrayOfInt8: TArray<TArray<Int8>>;
     FArrayOfInt16: TArray<TArray<Int16>>;
     FArrayOfInt32: TArray<TArray<Int32>>;
@@ -85,6 +95,8 @@ type
     FArrayOfUInt8Enum: TUInt8EnumArray;
     FArrayOfUInt16Enum: TUInt16EnumArray;
     FArrayOfUInt32Enum: TUInt32EnumArray;
+    FArrayOfSmallSet: TSmallSetArray;
+    FArrayOfLargeSet: TLargeSetArray;
     FArrayOfInt8: Int8Array;
     FArrayOfInt16: Int16Array;
     FArrayOfInt32: Int32Array;
@@ -110,6 +122,8 @@ type
     FArrayOfUInt8Enum: TArray<TUInt8Enum>;
     FArrayOfUInt16Enum: TArray<TUInt16Enum>;
     FArrayOfUInt32Enum: TArray<TUInt32Enum>;
+    FArrayOSmallSet: TArray<TSmallSet>;
+    FArrayOLargeSet: TArray<TLargeSet>;
     FArrayOfInt8: TArray<Int8>;
     FArrayOfInt16: TArray<Int16>;
     FArrayOfInt32: TArray<Int32>;
@@ -135,6 +149,8 @@ type
     FUInt8Enum: TUInt8Enum;
     FUInt16Enum: TUInt16Enum;
     FUInt32Enum: TUInt32Enum;
+    FSmallSet: TSmallSet;
+    FLargeSet: TLargeSet;
     FInt8: Int8;
     FInt16: Int16;
     FInt32: Int32;
@@ -206,13 +222,15 @@ begin
   with FSerializer.Setup do
     begin
       WillReturnDefault('SkipBranch', False);
+      WillReturn(False).When.SkipTypeNames;
       WillReturn(False).When.SkipEnumNames;
-      WillReturn(False).When.SkipAttributes;
-      WillExecute('BeginArray',
+      WillReturn(False).When.SkipRecordAttributes;
+      WillReturn(False).When.SkipFieldAttributes;
+      WillReturn(True).When.ByteArrayAsAWhole;
+      WillExecute('BeginVariableArray',
           function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
-          if args[1].AsType<Integer> = 0 then
-            args[1] := 2;
+          args[1] := 2;
         end);
       WillExecute('Attribute',
         function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
@@ -263,10 +281,13 @@ begin
       Expect.Exactly(10).When.EnumName('C');
       Expect.Exactly(10).When.EnumName('D');
       Expect.Exactly(3).When.EnumName('[Unknown]');
+      Expect.Exactly(10).When.TypeName('TMyType');
+      Expect.Exactly(24).When.BeginFixedArray(4);
+      Expect.Exactly('BeginVariableArray', 96);
       Expect.Exactly('EndRecord', 15);
-      Expect.Exactly('EndField', 111);
+      Expect.Exactly('EndField', 139);
       Expect.Exactly('Attribute', 22);
-      Expect.Exactly('Value', 240);
+      Expect.Exactly('Value', 270);
       Expect.Exactly(10).When.SkipBranch(0);
       Expect.Exactly(10).When.SkipBranch(1);
     end;

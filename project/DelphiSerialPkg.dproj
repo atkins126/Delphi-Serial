@@ -98,6 +98,10 @@
         <DCCReference Include="..\source\Delphi.Serial.Yaml.pas"/>
         <DCCReference Include="..\source\Delphi.Serial.Toml.pas"/>
         <DCCReference Include="..\source\Delphi.Serial.Avro.pas"/>
+        <DCCReference Include="..\source\Delphi.Serial.MessagePack.pas"/>
+        <DCCReference Include="..\source\Delphi.Serial.Thrift.pas"/>
+        <DCCReference Include="..\source\Delphi.Serial.Sbe.pas"/>
+        <DCCReference Include="..\source\Delphi.Serial.Cbor.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -137,6 +141,12 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
                     <Platform Name="iOSSimulator">
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\build\Win64\Debug\lib\DelphiSerialPkg.bpl" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win64">
+                        <RemoteName>DelphiSerialPkg.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

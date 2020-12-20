@@ -21,7 +21,11 @@ uses
   Delphi.Serial.XmlTest in '..\test\Delphi.Serial.XmlTest.pas',
   Delphi.Serial.YamlTest in '..\test\Delphi.Serial.YamlTest.pas',
   Delphi.Serial.TomlTest in '..\test\Delphi.Serial.TomlTest.pas',
-  Delphi.Serial.AvroTest in '..\test\Delphi.Serial.AvroTest.pas';
+  Delphi.Serial.AvroTest in '..\test\Delphi.Serial.AvroTest.pas',
+  Delphi.Serial.MessagePackTest in '..\test\Delphi.Serial.MessagePackTest.pas',
+  Delphi.Serial.ThriftTest in '..\test\Delphi.Serial.ThriftTest.pas',
+  Delphi.Serial.SbeTest in '..\test\Delphi.Serial.SbeTest.pas',
+  Delphi.Serial.CborTest in '..\test\Delphi.Serial.CborTest.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

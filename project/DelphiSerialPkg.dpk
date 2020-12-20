@@ -40,6 +40,10 @@ contains
   Delphi.Serial in '..\source\Delphi.Serial.pas',
   Delphi.Serial.Yaml in '..\source\Delphi.Serial.Yaml.pas',
   Delphi.Serial.Toml in '..\source\Delphi.Serial.Toml.pas',
-  Delphi.Serial.Avro in '..\source\Delphi.Serial.Avro.pas';
+  Delphi.Serial.Avro in '..\source\Delphi.Serial.Avro.pas',
+  Delphi.Serial.MessagePack in '..\source\Delphi.Serial.MessagePack.pas',
+  Delphi.Serial.Thrift in '..\source\Delphi.Serial.Thrift.pas',
+  Delphi.Serial.Sbe in '..\source\Delphi.Serial.Sbe.pas',
+  Delphi.Serial.Cbor in '..\source\Delphi.Serial.Cbor.pas';
 
 end.

@@ -10,8 +10,9 @@ type
 
   TRttiVisitor = record
     private
-      FContext : TRttiContext;
       FObserver: IRttiObserver;
+      FContext : TRttiContext;
+      FByteType: TRttiType;
 
       procedure VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer = 1);
       procedure Visit(AInstance: Pointer; AType: TRttiRecordType); overload;
@@ -21,6 +22,7 @@ type
       procedure Visit(AInstance: Pointer; AType: TRttiFloatType; ACount: Integer); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiInt64Type; ACount: Integer); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiEnumerationType; ACount: Integer); overload;
+      procedure Visit(AInstance: Pointer; AType: TRttiSetType; ACount: Integer); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiArrayType); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiDynamicArrayType); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AEnumTypeInfo: Pointer); overload;
@@ -36,8 +38,7 @@ type
 implementation
 
 uses
-  System.TypInfo,
-  System.SysUtils;
+  System.TypInfo;
 
 {$POINTERMATH ON}
 
@@ -45,8 +46,9 @@ uses
 
 procedure TRttiVisitor.Initialize(AObserver: IRttiObserver);
 begin
-  FContext  := TRttiContext.Create;
   FObserver := AObserver;
+  FContext  := TRttiContext.Create;
+  FByteType := FContext.GetType(TypeInfo(Byte));
 end;
 
 procedure TRttiVisitor.Visit<T>(var AValue: T);
@@ -60,7 +62,10 @@ var
 begin
   if not Assigned(AType) then
     Exit
-  else if AType is TRttiStringType then
+  else if not FObserver.SkipTypeNames then
+    FObserver.TypeName(AType.Name);
+
+  if AType is TRttiStringType then
     Visit(AInstance, AType as TRttiStringType, ACount)
   else if AType is TRttiInt64Type then
     Visit(AInstance, AType as TRttiInt64Type, ACount)
@@ -68,6 +73,8 @@ begin
     Visit(AInstance, AType as TRttiFloatType, ACount)
   else if AType is TRttiEnumerationType then
     Visit(AInstance, AType as TRttiEnumerationType, ACount)
+  else if AType is TRttiSetType then
+    Visit(AInstance, AType as TRttiSetType, ACount)
   else if AType is TRttiOrdinalType then
     Visit(AInstance, AType as TRttiOrdinalType, ACount)
   else if AType is TRttiArrayType then
@@ -90,7 +97,7 @@ var
   SkipBranch: Boolean;
 begin
   FObserver.BeginRecord(AType.Name);
-  if not FObserver.SkipAttributes then
+  if not FObserver.SkipRecordAttributes then
     for Attribute in AType.GetAttributes do
       FObserver.Attribute(Attribute);
 
@@ -130,7 +137,7 @@ var
   Attribute: TCustomAttribute;
 begin
   FObserver.BeginField(AField.Name);
-  if not FObserver.SkipAttributes then
+  if not FObserver.SkipFieldAttributes then
     for Attribute in AField.GetAttributes do
       FObserver.Attribute(Attribute);
   VisitType(PByte(AInstance) + AField.Offset, AField.FieldType, 1);
@@ -201,8 +208,11 @@ begin
       for I := 0 to ACount - 1 do
         FObserver.Value(PShortint(AInstance)[I]);
     otUByte:
-      for I := 0 to ACount - 1 do
-        FObserver.Value(PByte(AInstance)[I]);
+      if (ACount > 1) and FObserver.ByteArrayAsAWhole then
+        FObserver.Value(AInstance, ACount)
+      else
+        for I := 0 to ACount - 1 do
+          FObserver.Value(PByte(AInstance)[I]);
     otSWord:
       for I := 0 to ACount - 1 do
         FObserver.Value(PSmallint(AInstance)[I]);
@@ -224,6 +234,18 @@ begin
   if not FObserver.SkipEnumNames then
     Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount, AType.Handle);
   Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount);
+end;
+
+procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiSetType; ACount: Integer);
+var
+  I: Integer;
+begin
+  for I := 0 to ACount - 1 do
+    begin
+      FObserver.BeginFixedArray(AType.TypeSize);
+      VisitType(PByte(AInstance) + I * AType.TypeSize, FByteType, AType.TypeSize);
+      FObserver.EndFixedArray;
+    end;
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AEnumTypeInfo: Pointer);
@@ -258,11 +280,9 @@ var
   Count: Integer;
 begin
   Count := AType.TotalElementCount;
-  FObserver.BeginArray(Count);
-  if Count <> AType.TotalElementCount then
-    raise Exception.CreateFmt('Number of elements in array should be %d, but was %d', [Count, AType.TotalElementCount]);
+  FObserver.BeginFixedArray(Count);
   VisitType(AInstance, AType.ElementType, Count);
-  FObserver.EndArray;
+  FObserver.EndFixedArray;
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiDynamicArrayType);
@@ -270,16 +290,15 @@ var
   Count : Integer;
   Length: NativeInt;
 begin
-
   Count := DynArraySize(Pointer(AInstance^));
-  FObserver.BeginArray(Count);
+  FObserver.BeginVariableArray(Count);
   if Count <> DynArraySize(Pointer(AInstance^)) then
     begin
       Length := Count;
       DynArraySetLength(Pointer(AInstance^), AType.Handle, 1, @Length);
     end;
   VisitType(Pointer(AInstance^), AType.ElementType, Count);
-  FObserver.EndArray;
+  FObserver.EndVariableArray;
 end;
 
 end.
