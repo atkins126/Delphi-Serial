@@ -5,12 +5,22 @@ interface
 uses
   Delphi.Serial.Protobuf.Serializer,
   Delphi.Serial.RttiObserver,
-  System.Classes;
+  System.Classes,
+  Delphi.Serial.Protobuf,
+  System.Generics.Collections;
 
 type
 
+  TRecordContext = class
+    FTypeName: string;
+    FCurrentFieldTag: FieldTag;
+    FSavedStreamPos: Int64;
+  end;
+
   TOutputSerializer = class(TSerializer, IRttiObserver)
     private
+      FRecordContexts: TStack<TRecordContext>;
+
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
       procedure Value(var AValue: Int32); overload;
@@ -50,29 +60,33 @@ type
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     public
-      constructor Create(Stream: TStream);
+      constructor Create(Stream: TCustomMemoryStream);
       destructor Destroy; override;
   end;
 
 implementation
 
+uses
+  Delphi.Serial.Utils;
+
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create;
+constructor TOutputSerializer.Create(Stream: TCustomMemoryStream);
 begin
   inherited;
-
+  FRecordContexts := TObjectStack<TRecordContext>.Create;
 end;
 
 destructor TOutputSerializer.Destroy;
 begin
-
+  FRecordContexts.Free;
   inherited;
 end;
 
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
-
+  if AAttribute is ProtobufAttribute then
+    FRecordContexts.Peek.FCurrentFieldTag := (AAttribute as ProtobufAttribute).FieldTag;
 end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
@@ -86,8 +100,13 @@ begin
 end;
 
 procedure TOutputSerializer.BeginRecord(const AName: string);
+var
+  Context: TRecordContext;
 begin
-
+  Context                 := TRecordContext.Create;
+  Context.FTypeName       := AName;
+  Context.FSavedStreamPos := Skip(2); // reserve space for 2 single-byte VarInts (most likely case)
+  FRecordContexts.Push(Context);
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
@@ -111,8 +130,25 @@ begin
 end;
 
 procedure TOutputSerializer.EndRecord;
+var
+  Context     : TRecordContext;
+  TagPrefix   : VarInt;
+  LengthPrefix: VarInt;
+  StreamPos   : Int64;
+  Difference  : Integer;
 begin
-
+  Context      := FRecordContexts.Pop;
+  StreamPos    := Skip(0);
+  Skip(Context.FSavedStreamPos - StreamPos);
+  TagPrefix    := TWireType.LengthPrefixed.MergeWith(Context.FCurrentFieldTag);
+  LengthPrefix := StreamPos - Context.FSavedStreamPos;
+  Difference   := TagPrefix.Count + LengthPrefix.Count - 2;
+  if Difference <> 0 then
+    Move(Difference); // move memory by a few bytes to allow space for the tag and length
+  Skip(- 2);
+  Pack(TagPrefix);
+  Pack(LengthPrefix);
+  Skip(StreamPos - Context.FSavedStreamPos);
 end;
 
 procedure TOutputSerializer.EndDynamicArray;

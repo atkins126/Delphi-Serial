@@ -9,7 +9,7 @@ uses
 
 type
 
-  FieldNumber = 1 .. $1FFFFFFF;
+  FieldTag    = 1 .. $1FFFFFFF;
   SignedInt32 = type Int32;
   SignedInt64 = type Int64;
   FixedInt32  = type Int32;
@@ -19,20 +19,20 @@ type
 
   ProtobufAttribute = class(TCustomAttribute)
     private
-      FFieldNumber: FieldNumber;
+      FFieldTag: FieldTag;
 
     public
-      constructor Create(AFieldNumber: FieldNumber);
+      constructor Create(AFieldTag: FieldTag);
 
-      property FieldNumber: FieldNumber read FFieldNumber;
+      property FieldTag: FieldTag read FFieldTag;
   end;
 
   EProtobufError = class(Exception);
 
   TProtobuf = class
     public
-      class function CreateInputSerializer(Stream: TStream): ISerializer; static;
-      class function CreateOutputSerializer(Stream: TStream): ISerializer; static;
+      class function CreateInputSerializer(Stream: TCustomMemoryStream): ISerializer; static;
+      class function CreateOutputSerializer(Stream: TCustomMemoryStream): ISerializer; static;
   end;
 
 implementation
@@ -43,19 +43,19 @@ uses
 
 { ProtobufAttribute }
 
-constructor ProtobufAttribute.Create(AFieldNumber: FieldNumber);
+constructor ProtobufAttribute.Create(AFieldTag: FieldTag);
 begin
-  FFieldNumber := AFieldNumber;
+  FFieldTag := AFieldTag;
 end;
 
 { TProtobuf }
 
-class function TProtobuf.CreateInputSerializer(Stream: TStream): ISerializer;
+class function TProtobuf.CreateInputSerializer(Stream: TCustomMemoryStream): ISerializer;
 begin
   Result := TInputSerializer.Create(Stream);
 end;
 
-class function TProtobuf.CreateOutputSerializer(Stream: TStream): ISerializer;
+class function TProtobuf.CreateOutputSerializer(Stream: TCustomMemoryStream): ISerializer;
 begin
   Result := TOutputSerializer.Create(Stream);
 end;

@@ -4,29 +4,38 @@ interface
 
 type
 
-  VarInt = record
-    public const
-      CMaxLength = 10;
-
+  VarIntImpl = record
     private
-      FBytes: array [0 .. CMaxLength - 1] of Byte;
-      FCount: Integer;
-
-      constructor Create(AValue: UInt64);
-      function Extract: UInt64;
+      FBytes    : PByte;
+      FMaxLength: Integer;
+      FCount    : Integer;
 
     const
       CBitShift = 7;
       CBitLimit = 1 shl CBitShift;
       CBitMask  = CBitLimit - 1;
 
-    public
-      property Count: Integer read FCount;
+      procedure SetValue(AValue: UInt64);
+      function GetValue: UInt64;
+  end;
 
-      class operator Implicit(AValue: UInt32): VarInt; inline;
-      class operator Implicit(AValue: UInt64): VarInt; inline;
-      class operator Implicit(AValue: VarInt): UInt32; inline;
-      class operator Implicit(AValue: VarInt): UInt64; inline;
+  VarInt = record
+    public const
+      CMaxLength = 10;
+
+    private
+      FBytes: array [0 .. CMaxLength - 1] of Byte;
+      FImpl : VarIntImpl;
+      FValue: UInt64;
+
+    public
+      property Count: Integer read FImpl.FCount;
+      property Value: UInt64 read FValue;
+
+      procedure Initialize(ABytes: PByte; ALength: Integer); overload; inline;
+      procedure Initialize(AValue: UInt64); overload; inline;
+
+      class operator Implicit(AValue: UInt64): VarInt; static; inline;
   end;
 
 function ZigZag(AValue: Int32): UInt32; overload; inline;
@@ -58,10 +67,48 @@ end;
 
 { VarInt }
 
-constructor VarInt.Create(AValue: UInt64);
+procedure VarInt.Initialize(ABytes: PByte; ALength: Integer);
+begin
+  FImpl.FBytes     := ABytes;
+  FImpl.FMaxLength := ALength;
+  FValue           := FImpl.GetValue;
+end;
+
+procedure VarInt.Initialize(AValue: UInt64);
+begin
+  FImpl.FBytes     := @FBytes[0];
+  FImpl.FMaxLength := CMaxLength;
+  FImpl.SetValue(AValue);
+  FValue           := AValue;
+end;
+
+class operator VarInt.Implicit(AValue: UInt64): VarInt;
+begin
+  Result.Initialize(AValue);
+end;
+
+{ VarIntImpl }
+
+function VarIntImpl.GetValue: UInt64;
+var
+  Shift: Byte;
+begin
+  Shift  := 0;
+  FCount := 0;
+  Result := FBytes[FCount] and CBitMask;
+  while (FCount < FMaxLength) and (FBytes[FCount] >= CBitLimit) do
+    begin
+      Inc(FCount);
+      Inc(Shift, CBitShift);
+      Result := Result or (UInt64(FBytes[FCount] and CBitMask) shl Shift);
+    end;
+  Inc(FCount);
+end;
+
+procedure VarIntImpl.SetValue(AValue: UInt64);
 begin
   FCount := 0;
-  while (FCount < CMaxLength) and (AValue >= CBitLimit) do
+  while (FCount < FMaxLength) and (AValue >= CBitLimit) do
     begin
       FBytes[FCount] := AValue or CBitLimit;
       AValue         := AValue shr CBitShift;
@@ -71,42 +118,6 @@ begin
   FBytes[FCount]     := AValue;
   Inc(FCount);
   FBytes[FCount - 1] := FBytes[FCount - 1] and CBitMask;
-end;
-
-function VarInt.Extract: UInt64;
-var
-  Shift: Byte;
-begin
-  Shift  := 0;
-  FCount := 0;
-  Result := FBytes[FCount] and CBitMask;
-  while (FCount < CMaxLength) and (FBytes[FCount] >= CBitLimit) do
-    begin
-      Inc(FCount);
-      Inc(Shift, CBitShift);
-      Result := Result or (UInt64(FBytes[FCount] and CBitMask) shl Shift);
-    end;
-  Inc(FCount);
-end;
-
-class operator VarInt.Implicit(AValue: UInt32): VarInt;
-begin
-  Result := VarInt.Create(AValue);
-end;
-
-class operator VarInt.Implicit(AValue: UInt64): VarInt;
-begin
-  Result := VarInt.Create(AValue);
-end;
-
-class operator VarInt.Implicit(AValue: VarInt): UInt32;
-begin
-  Result := AValue.Extract;
-end;
-
-class operator VarInt.Implicit(AValue: VarInt): UInt64;
-begin
-  Result := AValue.Extract;
 end;
 
 end.

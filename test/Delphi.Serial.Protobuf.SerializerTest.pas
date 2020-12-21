@@ -15,7 +15,7 @@ type
   [TestFixture]
   TSerializerTest = class
     private
-      FStream    : TStream;
+      FStream    : TCustomMemoryStream;
       FSerializer: TSerializer;
 
     public

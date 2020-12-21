@@ -70,7 +70,7 @@ var
   VarIntValue: VarInt;
 begin
   VarIntValue := AValue;
-  Assert.AreEqual<UInt64>(AValue, VarIntValue);
+  Assert.AreEqual(AValue, VarIntValue.Value);
 end;
 
 procedure TVarIntTest.TestCreateAndExtractBig(const AValue: string);
@@ -80,7 +80,7 @@ var
 begin
   Value       := UInt64.Parse(AValue);
   VarIntValue := Value;
-  Assert.AreEqual<UInt64>(Value, VarIntValue);
+  Assert.AreEqual(Value, VarIntValue.Value);
 end;
 
 { TZigZagTest }
