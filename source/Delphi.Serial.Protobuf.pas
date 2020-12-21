@@ -9,13 +9,16 @@ uses
 
 type
 
-  FieldTag    = 1 .. $1FFFFFFF;
-  SignedInt32 = type Int32;
-  SignedInt64 = type Int64;
-  FixedInt32  = type Int32;
-  FixedInt64  = type Int64;
-  FixedUInt32 = type UInt32;
-  FixedUInt64 = type UInt64;
+  FieldTag = 1 .. $1FFFFFFF;
+  Float    = Single;
+  Bool     = Boolean;
+  Bytes    = TBytes;
+  SInt32   = type Int32;
+  SInt64   = type Int64;
+  Fixed32  = type UInt32;
+  Fixed64  = type UInt64;
+  SFixed32 = type Int32;
+  SFixed64 = type Int64;
 
   ProtobufAttribute = class(TCustomAttribute)
     private

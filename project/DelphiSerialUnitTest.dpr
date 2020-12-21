@@ -26,7 +26,7 @@ uses
   Delphi.Serial.ThriftTest in '..\test\Delphi.Serial.ThriftTest.pas',
   Delphi.Serial.SbeTest in '..\test\Delphi.Serial.SbeTest.pas',
   Delphi.Serial.CborTest in '..\test\Delphi.Serial.CborTest.pas',
-  Delphi.Serial.UtilsTest in '..\test\Delphi.Serial.UtilsTest.pas',
+  Delphi.Serial.ProtobufUtilsTest in '..\test\Delphi.Serial.ProtobufUtilsTest.pas',
   Delphi.Serial.Protobuf.SerializerTest in '..\test\Delphi.Serial.Protobuf.SerializerTest.pas';
 
 {$IFNDEF TESTINSIGHT}

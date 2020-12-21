@@ -6,7 +6,7 @@ interface
 
 uses
   Delphi.Serial.Protobuf,
-  Delphi.Serial.Utils,
+  Delphi.Serial.ProtobufUtils,
   System.Classes;
 
 type
@@ -22,28 +22,14 @@ type
       function Write(const AValue; ACount: Integer): Integer; inline;
 
       procedure Parse(var AValue: VarInt); overload; inline;
-      procedure Parse(var AValue: Int32); overload; inline;
-      procedure Parse(var AValue: Int64); overload; inline;
-      procedure Parse(var AValue: UInt32); overload; inline;
-      procedure Parse(var AValue: UInt64); overload; inline;
-      procedure Parse(var AValue: SignedInt32); overload; inline;
-      procedure Parse(var AValue: SignedInt64); overload; inline;
+      procedure Parse(var AValue: SignedInt); overload; inline;
       procedure Parse(var AValue: FixedInt32); overload; inline;
       procedure Parse(var AValue: FixedInt64); overload; inline;
-      procedure Parse(var AValue: FixedUInt32); overload; inline;
-      procedure Parse(var AValue: FixedUInt64); overload; inline;
 
       procedure Pack(AValue: VarInt); overload; inline;
-      procedure Pack(AValue: Int32); overload; inline;
-      procedure Pack(AValue: Int64); overload; inline;
-      procedure Pack(AValue: UInt32); overload; inline;
-      procedure Pack(AValue: UInt64); overload; inline;
-      procedure Pack(AValue: SignedInt32); overload; inline;
-      procedure Pack(AValue: SignedInt64); overload; inline;
+      procedure Pack(AValue: SignedInt); overload; inline;
       procedure Pack(AValue: FixedInt32); overload; inline;
       procedure Pack(AValue: FixedInt64); overload; inline;
-      procedure Pack(AValue: FixedUInt32); overload; inline;
-      procedure Pack(AValue: FixedUInt64); overload; inline;
 
     public
       constructor Create(Stream: TCustomMemoryStream);
@@ -57,9 +43,6 @@ type
   end;
 
 implementation
-
-uses
-  System.Math;
 
 { TWireTypeHelper }
 
@@ -111,27 +94,9 @@ begin
   write(AValue, AValue.Count);
 end;
 
-procedure TSerializer.Pack(AValue: Int32);
+procedure TSerializer.Pack(AValue: SignedInt);
 begin
-  if AValue < 0 then
-    Pack(Int64(AValue))
-  else
-    Pack(UInt32(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: Int64);
-begin
-  Pack(UInt64(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: UInt32);
-begin
-  Pack(VarInt(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: UInt64);
-begin
-  Pack(VarInt(AValue));
+  write(AValue, AValue.Count);
 end;
 
 procedure TSerializer.Pack(AValue: FixedInt32);
@@ -144,77 +109,16 @@ begin
   write(AValue, SizeOf(AValue));
 end;
 
-procedure TSerializer.Pack(AValue: FixedUInt32);
-begin
-  write(AValue, SizeOf(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: FixedUInt64);
-begin
-  write(AValue, SizeOf(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: SignedInt32);
-begin
-  Pack(ZigZag(AValue));
-end;
-
-procedure TSerializer.Pack(AValue: SignedInt64);
-begin
-  Pack(ZigZag(AValue));
-end;
-
 procedure TSerializer.Parse(var AValue: VarInt);
-var
-  MaxLength: Integer;
 begin
-  MaxLength := Min(VarInt.CMaxLength, FStream.Size - FStream.Position);
-  AValue.Initialize(PByte(FStream.Memory) + FStream.Position, MaxLength);
+  AValue.Initialize(PByte(FStream.Memory) + FStream.Position, FStream.Size - FStream.Position);
   Skip(AValue.Count);
 end;
 
-procedure TSerializer.Parse(var AValue: Int32);
+procedure TSerializer.Parse(var AValue: SignedInt);
 begin
-  Parse(UInt32(AValue));
-  if AValue < 0 then
-    Skip(VarInt.CMaxLength div 2); // skip high bytes of encoded Int64
-end;
-
-procedure TSerializer.Parse(var AValue: Int64);
-begin
-  Parse(UInt64(AValue));
-end;
-
-procedure TSerializer.Parse(var AValue: UInt32);
-var
-  Source: VarInt;
-begin
-  Parse(Source);
-  AValue := Source.Value;
-end;
-
-procedure TSerializer.Parse(var AValue: UInt64);
-var
-  Source: VarInt;
-begin
-  Parse(Source);
-  AValue := Source.Value;
-end;
-
-procedure TSerializer.Parse(var AValue: SignedInt32);
-var
-  Value: UInt32;
-begin
-  Parse(Value);
-  AValue := ZigZag(Value);
-end;
-
-procedure TSerializer.Parse(var AValue: SignedInt64);
-var
-  Value: UInt64;
-begin
-  Parse(Value);
-  AValue := ZigZag(Value);
+  AValue.Initialize(PByte(FStream.Memory) + FStream.Position, FStream.Size - FStream.Position);
+  Skip(AValue.Count);
 end;
 
 procedure TSerializer.Parse(var AValue: FixedInt32);
@@ -223,16 +127,6 @@ begin
 end;
 
 procedure TSerializer.Parse(var AValue: FixedInt64);
-begin
-  read(AValue, SizeOf(AValue));
-end;
-
-procedure TSerializer.Parse(var AValue: FixedUInt32);
-begin
-  read(AValue, SizeOf(AValue));
-end;
-
-procedure TSerializer.Parse(var AValue: FixedUInt64);
 begin
   read(AValue, SizeOf(AValue));
 end;

@@ -28,6 +28,12 @@ type
       [TestCase('Zero', '0')]
       [TestCase('One', '1')]
       [TestCase('Minus one', '-1')]
+      procedure TestSkipAndMove(ACount: Integer);
+
+      [Test]
+      [TestCase('Zero', '0')]
+      [TestCase('One', '1')]
+      [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '2147483647')]
       [TestCase('Lowest value', '-2147483648')]
       procedure TestPackAndParseInt32(AValue: Int32);
@@ -58,7 +64,7 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '2147483647')]
       [TestCase('Lowest value', '-2147483648')]
-      procedure TestPackAndParseSignedInt32(AValue: SignedInt32);
+      procedure TestPackAndParseSInt32(AValue: SInt32);
 
       [Test]
       [TestCase('Zero', '0')]
@@ -66,7 +72,7 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '9223372036854775807')]
       [TestCase('Lowest value', '-9223372036854775808')]
-      procedure TestPackAndParseSignedInt64(AValue: SignedInt64);
+      procedure TestPackAndParseSInt64(AValue: SInt64);
 
       [Test]
       [TestCase('Zero', '0')]
@@ -74,7 +80,7 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '2147483647')]
       [TestCase('Lowest value', '-2147483648')]
-      procedure TestPackAndParseFixedInt32(AValue: FixedInt32);
+      procedure TestPackAndParseSFixed32(AValue: SFixed32);
 
       [Test]
       [TestCase('Zero', '0')]
@@ -82,22 +88,36 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '9223372036854775807')]
       [TestCase('Lowest value', '-9223372036854775808')]
-      procedure TestPackAndParseFixedInt64(AValue: FixedInt64);
+      procedure TestPackAndParseSFixed64(AValue: SFixed64);
 
       [Test]
       [TestCase('Zero', '0')]
       [TestCase('One', '1')]
       [TestCase('Highest value', '2147483647')]
-      procedure TestPackAndParseFixedUInt32(AValue: FixedUInt32);
+      procedure TestPackAndParseFixed32(AValue: Fixed32);
 
       [Test]
       [TestCase('Zero', '0')]
       [TestCase('One', '1')]
       [TestCase('Highest value', '9223372036854775807')]
-      procedure TestPackAndParseFixedUInt64(AValue: FixedUInt64);
+      procedure TestPackAndParseFixed64(AValue: Fixed64);
+  end;
+
+  [TestFixture]
+  TWireTypeTest = class
+    public
+      [Test]
+      [TestCase('First wire type and first field tag', '0,1,8')]
+      [TestCase('First wire type and last field tag', '0,536870911,4294967288')]
+      [TestCase('Last wire type and first field tag', '5,1,13')]
+      [TestCase('Last wire type and last field tag', '5,536870911,4294967293')]
+      procedure TestMergeAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
   end;
 
 implementation
+
+uses
+  Delphi.Serial.ProtobufUtils;
 
 { TSerializerTest }
 
@@ -113,104 +133,133 @@ begin
   FStream.Free;
 end;
 
-procedure TSerializerTest.TestPackAndParseFixedInt32(AValue: FixedInt32);
+procedure TSerializerTest.TestSkipAndMove(ACount: Integer);
+var
+  Pos   : Int64;
+  Target: VarInt;
+begin
+  FSerializer.Pack(VarInt(0));
+  Pos := FStream.Position;
+  FSerializer.Pack(VarInt(High(Integer)));
+  FSerializer.Pack(VarInt(1));
+  FSerializer.Skip(Pos - FStream.Position);
+  FSerializer.Move(ACount);
+  FSerializer.Skip(ACount);
+  FSerializer.Parse(Target);
+  Assert.AreEqual(High(Integer), UInt32(Target));
+  FSerializer.Parse(Target);
+  Assert.AreEqual(1, UInt32(Target));
+end;
+
+procedure TSerializerTest.TestPackAndParseSFixed32(AValue: SFixed32);
 var
   Target: FixedInt32;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(FixedInt32(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, SFixed32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseFixedInt64(AValue: FixedInt64);
+procedure TSerializerTest.TestPackAndParseSFixed64(AValue: SFixed64);
 var
   Target: FixedInt64;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(FixedInt64(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual<SFixed64>(AValue, SFixed64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseFixedUInt32(AValue: FixedUInt32);
+procedure TSerializerTest.TestPackAndParseFixed32(AValue: Fixed32);
 var
-  Target: FixedUInt32;
+  Target: FixedInt32;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(FixedInt32(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, Fixed32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseFixedUInt64(AValue: FixedUInt64);
+procedure TSerializerTest.TestPackAndParseFixed64(AValue: Fixed64);
 var
-  Target: FixedUInt64;
+  Target: FixedInt64;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(FixedInt64(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual<Fixed64>(AValue, Fixed64(Target));
 end;
 
 procedure TSerializerTest.TestPackAndParseInt32(AValue: Int32);
 var
-  Target: Int32;
+  Target: VarInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(VarInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, Int32(Target));
 end;
 
 procedure TSerializerTest.TestPackAndParseInt64(AValue: Int64);
 var
-  Target: Int64;
+  Target: VarInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(VarInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, Int64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSignedInt32(AValue: SignedInt32);
+procedure TSerializerTest.TestPackAndParseSInt32(AValue: SInt32);
 var
-  Target: SignedInt32;
+  Target: SignedInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(SignedInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, SInt32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSignedInt64(AValue: SignedInt64);
+procedure TSerializerTest.TestPackAndParseSInt64(AValue: SInt64);
 var
-  Target: SignedInt64;
+  Target: SignedInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(SignedInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual<SInt64>(AValue, SInt64(Target));
 end;
 
 procedure TSerializerTest.TestPackAndParseUInt32(AValue: UInt32);
 var
-  Target: UInt32;
+  Target: VarInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(VarInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, UInt32(Target));
 end;
 
 procedure TSerializerTest.TestPackAndParseUInt64(AValue: UInt64);
 var
-  Target: UInt64;
+  Target: VarInt;
 begin
-  FSerializer.Pack(AValue);
+  FSerializer.Pack(VarInt(AValue));
   FStream.Position := 0;
   FSerializer.Parse(Target);
-  Assert.AreEqual(AValue, Target);
+  Assert.AreEqual(AValue, UInt64(Target));
+end;
+
+{ TWireTypeTest }
+
+procedure TWireTypeTest.TestMergeAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
+var
+  WireType: TWireType;
+begin
+  Assert.AreEqual(AExpectedValue, TWireType(AWireType).MergeWith(AFieldTag));
+  Assert.AreEqual(AFieldTag, WireType.ExtractFrom(AExpectedValue));
+  Assert.AreEqual(TWireType(AWireType), WireType);
 end;
 
 initialization

@@ -105,7 +105,7 @@
         <DCCReference Include="..\test\Delphi.Serial.ThriftTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.SbeTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.CborTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.UtilsTest.pas"/>
+        <DCCReference Include="..\test\Delphi.Serial.ProtobufUtilsTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.Protobuf.SerializerTest.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

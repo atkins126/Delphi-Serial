@@ -67,7 +67,7 @@ type
 implementation
 
 uses
-  Delphi.Serial.Utils;
+  Delphi.Serial.ProtobufUtils;
 
 { TOutputSerializer }
 
@@ -140,8 +140,8 @@ begin
   Context      := FRecordContexts.Pop;
   StreamPos    := Skip(0);
   Skip(Context.FSavedStreamPos - StreamPos);
-  TagPrefix    := TWireType.LengthPrefixed.MergeWith(Context.FCurrentFieldTag);
-  LengthPrefix := StreamPos - Context.FSavedStreamPos;
+  TagPrefix    := VarInt(TWireType.LengthPrefixed.MergeWith(Context.FCurrentFieldTag));
+  LengthPrefix := VarInt(StreamPos - Context.FSavedStreamPos);
   Difference   := TagPrefix.Count + LengthPrefix.Count - 2;
   if Difference <> 0 then
     Move(Difference); // move memory by a few bytes to allow space for the tag and length

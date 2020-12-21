@@ -1,4 +1,4 @@
-unit Delphi.Serial.UtilsTest;
+unit Delphi.Serial.ProtobufUtilsTest;
 
 interface
 
@@ -38,7 +38,7 @@ type
   end;
 
   [TestFixture]
-  TZigZagTest = class
+  TSignedIntTest = class
     public
       [Test]
       [TestCase('Zero', '0')]
@@ -46,7 +46,7 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '2147483647')]
       [TestCase('Lowest value', '-2147483648')]
-      procedure TestZigZag32(AValue: Int32);
+      procedure TestCreateAndExtract32(AValue: Int32);
 
       [Test]
       [TestCase('Zero', '0')]
@@ -54,50 +54,82 @@ type
       [TestCase('Minus one', '-1')]
       [TestCase('Highest value', '9223372036854775807')]
       [TestCase('Lowest value', '-9223372036854775808')]
-      procedure TestZigZag64(AValue: Int64);
+      procedure TestCreateAndExtract64(AValue: Int64);
+  end;
+
+  [TestFixture]
+  TFixedInt32Test = class
+    public
+      [Test]
+      [TestCase('Zero', '0')]
+      [TestCase('One', '1')]
+      [TestCase('Highest value', '4294967295')]
+      procedure TestCreateAndExtract(AValue: UInt32);
+  end;
+
+  [TestFixture]
+  TFixedInt64Test = class
+    public
+      [Test]
+      [TestCase('Zero', '0')]
+      [TestCase('One', '1')]
+      [TestCase('Highest value', '18446744073709551615')]
+      procedure TestCreateAndExtract(const AValue: string);
   end;
 
 implementation
 
 uses
-  Delphi.Serial.Utils,
+  Delphi.Serial.ProtobufUtils,
   System.SysUtils;
 
 { TVarIntTest }
 
 procedure TVarIntTest.TestCreateAndExtract(AValue: UInt64);
-var
-  VarIntValue: VarInt;
 begin
-  VarIntValue := AValue;
-  Assert.AreEqual(AValue, VarIntValue.Value);
+  Assert.AreEqual(AValue, UInt64(VarInt(AValue)));
 end;
 
 procedure TVarIntTest.TestCreateAndExtractBig(const AValue: string);
 var
-  Value      : UInt64;
-  VarIntValue: VarInt;
+  Value: UInt64;
 begin
-  Value       := UInt64.Parse(AValue);
-  VarIntValue := Value;
-  Assert.AreEqual(Value, VarIntValue.Value);
+  Value := UInt64.Parse(AValue);
+  Assert.AreEqual(Value, UInt64(VarInt(Value)));
 end;
 
-{ TZigZagTest }
+{ TSignedIntTest }
 
-procedure TZigZagTest.TestZigZag32(AValue: Int32);
+procedure TSignedIntTest.TestCreateAndExtract32(AValue: Int32);
 begin
-  Assert.AreEqual(AValue, ZigZag(ZigZag(AValue)));
+  Assert.AreEqual(AValue, Int32(SignedInt(AValue)));
 end;
 
-procedure TZigZagTest.TestZigZag64(AValue: Int64);
+procedure TSignedIntTest.TestCreateAndExtract64(AValue: Int64);
 begin
-  Assert.AreEqual(AValue, ZigZag(ZigZag(AValue)));
+  Assert.AreEqual(AValue, Int64(SignedInt(AValue)));
+end;
+
+{ TFixedInt32Test }
+
+procedure TFixedInt32Test.TestCreateAndExtract(AValue: UInt32);
+begin
+  Assert.AreEqual(AValue, UInt32(FixedInt32(AValue)));
+end;
+
+{ TFixedInt64Test }
+
+procedure TFixedInt64Test.TestCreateAndExtract(const AValue: string);
+var
+  Value: UInt64;
+begin
+  Value := UInt64.Parse(AValue);
+  Assert.AreEqual(Value, UInt64(FixedInt64(Value)));
 end;
 
 initialization
 
 TDUnitX.RegisterTestFixture(TVarIntTest);
-TDUnitX.RegisterTestFixture(TZigZagTest);
+TDUnitX.RegisterTestFixture(TSignedIntTest);
 
 end.
