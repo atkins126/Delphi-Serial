@@ -72,8 +72,10 @@ type
     public
       class operator Explicit(AValue: Int32): FixedInt32; static; inline;
       class operator Explicit(AValue: UInt32): FixedInt32; static; inline;
+      class operator Explicit(AValue: Single): FixedInt32; static; inline;
       class operator Explicit(AValue: FixedInt32): Int32; static; inline;
       class operator Explicit(AValue: FixedInt32): UInt32; static; inline;
+      class operator Explicit(AValue: FixedInt32): Single; static; inline;
   end;
 
   FixedInt64 = record
@@ -83,8 +85,10 @@ type
     public
       class operator Explicit(AValue: Int64): FixedInt64; static; inline;
       class operator Explicit(AValue: UInt64): FixedInt64; static; inline;
+      class operator Explicit(AValue: Double): FixedInt64; static; inline;
       class operator Explicit(AValue: FixedInt64): Int64; static; inline;
       class operator Explicit(AValue: FixedInt64): UInt64; static; inline;
+      class operator Explicit(AValue: FixedInt64): Double; static; inline;
   end;
 
 implementation
@@ -241,6 +245,11 @@ begin
   Result.FValue := AValue;
 end;
 
+class operator FixedInt32.Explicit(AValue: Single): FixedInt32;
+begin
+  Result.FValue := PUint32(Addr(AValue))^;
+end;
+
 class operator FixedInt32.Explicit(AValue: FixedInt32): UInt32;
 begin
   Result := AValue.FValue;
@@ -249,6 +258,11 @@ end;
 class operator FixedInt32.Explicit(AValue: FixedInt32): Int32;
 begin
   Result := AValue.FValue;
+end;
+
+class operator FixedInt32.Explicit(AValue: FixedInt32): Single;
+begin
+  Result := PSingle(Addr(AValue.FValue))^;
 end;
 
 { FixedInt64 }
@@ -263,6 +277,11 @@ begin
   Result.FValue := AValue;
 end;
 
+class operator FixedInt64.Explicit(AValue: Double): FixedInt64;
+begin
+  Result.FValue := PUint64(Addr(AValue))^;
+end;
+
 class operator FixedInt64.Explicit(AValue: FixedInt64): UInt64;
 begin
   Result := AValue.FValue;
@@ -271,6 +290,11 @@ end;
 class operator FixedInt64.Explicit(AValue: FixedInt64): Int64;
 begin
   Result := AValue.FValue;
+end;
+
+class operator FixedInt64.Explicit(AValue: FixedInt64): Double;
+begin
+  Result := PDouble(Addr(AValue.FValue))^;
 end;
 
 end.

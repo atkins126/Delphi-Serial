@@ -16,7 +16,7 @@ type
       FStream: TCustomMemoryStream;
 
     protected
-      procedure Move(ACount: Integer); inline;
+      procedure Move(ACount: Integer);
       function Skip(ACount: Integer): Int64; inline;
       function Read(var AValue; ACount: Integer): Integer; inline;
       function Write(const AValue; ACount: Integer): Integer; inline;
@@ -38,7 +38,7 @@ type
   TWireType = (VarInt = 0, _64bit = 1, LengthPrefixed = 2, _32bit = 5);
 
   TWireTypeHelper = record helper for TWireType
-    function MergeWith(AFieldTag: FieldTag): UInt32;
+    function CombineWith(AFieldTag: FieldTag): UInt32;
     function ExtractFrom(AValue: UInt32): FieldTag;
   end;
 
@@ -46,7 +46,7 @@ implementation
 
 { TWireTypeHelper }
 
-function TWireTypeHelper.MergeWith(AFieldTag: FieldTag): UInt32;
+function TWireTypeHelper.CombineWith(AFieldTag: FieldTag): UInt32;
 begin
   Result := (AFieldTag shl 3) or Ord(Self);
 end;
@@ -67,11 +67,18 @@ end;
 procedure TSerializer.Move(ACount: Integer);
 var
   Start: PByte;
+  Size : Int64;
+  Pos  : Int64;
 begin
+  Size := FStream.Size;
   if ACount > 0 then
-    FStream.Size := FStream.Size + ACount;
-  Start          := PByte(FStream.Memory) + FStream.Position;
-  System.Move(Start^, (Start + ACount)^, FStream.Size - FStream.Position);
+    begin
+      Inc(Size, ACount);
+      FStream.Size := Size;
+    end;
+  Pos              := FStream.Position;
+  Start            := PByte(FStream.Memory) + Pos;
+  System.Move(Start^, (Start + ACount)^, Size - Pos);
 end;
 
 function TSerializer.Skip(ACount: Integer): Int64;

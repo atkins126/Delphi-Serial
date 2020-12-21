@@ -65,6 +65,12 @@ type
       [TestCase('One', '1')]
       [TestCase('Highest value', '4294967295')]
       procedure TestCreateAndExtract(AValue: UInt32);
+
+      [Test]
+      [TestCase('Zero', '0')]
+      [TestCase('Positive fractional', '1.123456')]
+      [TestCase('Negative fractional', '-1.123456')]
+      procedure TestCreateAndExtractFloat(AValue: Single);
   end;
 
   [TestFixture]
@@ -75,6 +81,12 @@ type
       [TestCase('One', '1')]
       [TestCase('Highest value', '18446744073709551615')]
       procedure TestCreateAndExtract(const AValue: string);
+
+      [Test]
+      [TestCase('Zero', '0')]
+      [TestCase('Positive fractional', '1.123456')]
+      [TestCase('Negative fractional', '-1.123456')]
+      procedure TestCreateAndExtractFloat(AValue: Double);
   end;
 
 implementation
@@ -117,6 +129,11 @@ begin
   Assert.AreEqual(AValue, UInt32(FixedInt32(AValue)));
 end;
 
+procedure TFixedInt32Test.TestCreateAndExtractFloat(AValue: Single);
+begin
+  Assert.AreEqual(AValue, Single(FixedInt32(AValue)));
+end;
+
 { TFixedInt64Test }
 
 procedure TFixedInt64Test.TestCreateAndExtract(const AValue: string);
@@ -125,6 +142,11 @@ var
 begin
   Value := UInt64.Parse(AValue);
   Assert.AreEqual(Value, UInt64(FixedInt64(Value)));
+end;
+
+procedure TFixedInt64Test.TestCreateAndExtractFloat(AValue: Double);
+begin
+  Assert.AreEqual(AValue, Double(FixedInt64(AValue)));
 end;
 
 initialization

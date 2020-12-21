@@ -111,7 +111,7 @@ type
       [TestCase('First wire type and last field tag', '0,536870911,4294967288')]
       [TestCase('Last wire type and first field tag', '5,1,13')]
       [TestCase('Last wire type and last field tag', '5,536870911,4294967293')]
-      procedure TestMergeAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
+      procedure TestCombineAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
   end;
 
 implementation
@@ -253,11 +253,11 @@ end;
 
 { TWireTypeTest }
 
-procedure TWireTypeTest.TestMergeAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
+procedure TWireTypeTest.TestCombineAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
 var
   WireType: TWireType;
 begin
-  Assert.AreEqual(AExpectedValue, TWireType(AWireType).MergeWith(AFieldTag));
+  Assert.AreEqual(AExpectedValue, TWireType(AWireType).CombineWith(AFieldTag));
   Assert.AreEqual(AFieldTag, WireType.ExtractFrom(AExpectedValue));
   Assert.AreEqual(TWireType(AWireType), WireType);
 end;
