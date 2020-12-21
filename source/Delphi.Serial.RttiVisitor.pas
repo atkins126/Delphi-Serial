@@ -98,7 +98,7 @@ var
   SkipBranch: Boolean;
 begin
   FObserver.BeginRecord(AType.Name);
-  if not FObserver.SkipRecordAttributes then
+  if not FObserver.SkipAttributes then
     for Attribute in AType.GetAttributes do
       FObserver.Attribute(Attribute);
 
@@ -109,7 +109,7 @@ begin
     begin
       if Field.Offset = CaseOffset then
         begin
-          SkipBranch := FObserver.SkipBranch(CaseBranch);
+          SkipBranch := FObserver.SkipCaseBranch(CaseBranch);
           Inc(CaseBranch);
         end;
       if not SkipBranch then
@@ -138,7 +138,7 @@ var
   Attribute: TCustomAttribute;
 begin
   FObserver.BeginField(AField.Name);
-  if not FObserver.SkipFieldAttributes then
+  if not FObserver.SkipAttributes then
     for Attribute in AField.GetAttributes do
       FObserver.Attribute(Attribute);
   VisitType(PByte(AInstance) + AField.Offset, AField.FieldType, 1);
@@ -243,9 +243,9 @@ var
 begin
   for I := 0 to ACount - 1 do
     begin
-      FObserver.BeginFixedArray(AType.TypeSize);
+      FObserver.BeginStaticArray(AType.TypeSize);
       VisitType(PByte(AInstance) + I * AType.TypeSize, FByteType, AType.TypeSize);
-      FObserver.EndFixedArray;
+      FObserver.EndStaticArray;
     end;
 end;
 
@@ -281,9 +281,9 @@ var
   Count: Integer;
 begin
   Count := AType.TotalElementCount;
-  FObserver.BeginFixedArray(Count);
+  FObserver.BeginStaticArray(Count);
   VisitType(AInstance, AType.ElementType, Count);
-  FObserver.EndFixedArray;
+  FObserver.EndStaticArray;
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiDynamicArrayType);
@@ -292,14 +292,14 @@ var
   Length: NativeInt;
 begin
   Count := DynArraySize(Pointer(AInstance^));
-  FObserver.BeginVariableArray(Count);
+  FObserver.BeginDynamicArray(Count);
   if Count <> DynArraySize(Pointer(AInstance^)) then
     begin
       Length := Count;
       DynArraySetLength(Pointer(AInstance^), AType.Handle, 1, @Length);
     end;
   VisitType(Pointer(AInstance^), AType.ElementType, Count);
-  FObserver.EndVariableArray;
+  FObserver.EndDynamicArray;
 end;
 
 end.

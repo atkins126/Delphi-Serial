@@ -30,15 +30,14 @@ type
     procedure EndRecord;
     procedure BeginField(const AName: string);
     procedure EndField;
-    procedure BeginFixedArray(ALength: Integer);
-    procedure EndFixedArray;
-    procedure BeginVariableArray(var ALength: Integer);
-    procedure EndVariableArray;
+    procedure BeginStaticArray(ALength: Integer);
+    procedure EndStaticArray;
+    procedure BeginDynamicArray(var ALength: Integer);
+    procedure EndDynamicArray;
 
     function SkipEnumNames: Boolean;
-    function SkipRecordAttributes: Boolean;
-    function SkipFieldAttributes: Boolean;
-    function SkipBranch(ABranch: Integer): Boolean;
+    function SkipAttributes: Boolean;
+    function SkipCaseBranch(ABranch: Integer): Boolean;
     function ByteArrayAsAWhole: Boolean;
 
     procedure TypeKind(AKind: TTypeKind);

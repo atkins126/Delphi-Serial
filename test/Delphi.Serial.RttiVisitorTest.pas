@@ -223,10 +223,9 @@ begin
     begin
       WillReturnDefault('SkipBranch', False);
       WillReturn(False).When.SkipEnumNames;
-      WillReturn(False).When.SkipRecordAttributes;
-      WillReturn(False).When.SkipFieldAttributes;
+      WillReturn(False).When.SkipAttributes;
       WillReturn(True).When.ByteArrayAsAWhole;
-      WillExecute('BeginVariableArray',
+      WillExecute('BeginDynamicArray',
           function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
           args[1] := 2;
@@ -246,7 +245,7 @@ begin
               FSaveOneof := False;
             end;
         end);
-      WillExecute('SkipBranch',
+      WillExecute('SkipCaseBranch',
         function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
           Result := TMyOneof(args[1].AsType<Integer>) <> FOneofValue;
@@ -282,14 +281,14 @@ begin
       Expect.Exactly(35).When.TypeKind(tkEnumeration);
       Expect.Exactly(3).When.EnumName('[Unknown]');
       Expect.Exactly(10).When.TypeName('TMyType');
-      Expect.Exactly(24).When.BeginFixedArray(4);
-      Expect.Exactly('BeginVariableArray', 96);
+      Expect.Exactly(24).When.BeginStaticArray(4);
+      Expect.Exactly('BeginDynamicArray', 96);
       Expect.Exactly('EndRecord', 15);
       Expect.Exactly('EndField', 139);
       Expect.Exactly('Attribute', 22);
       Expect.Exactly('Value', 270);
-      Expect.Exactly(10).When.SkipBranch(0);
-      Expect.Exactly(10).When.SkipBranch(1);
+      Expect.Exactly(10).When.SkipCaseBranch(0);
+      Expect.Exactly(10).When.SkipCaseBranch(1);
     end;
   FMyRecord.Serialize(FSerializer);
   FSerializer.VerifyAll;
