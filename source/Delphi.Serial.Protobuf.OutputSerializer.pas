@@ -18,9 +18,9 @@ type
     FTypeKind: TTypeKind;
     FStartPos: Int64;
     FFieldTag: FieldTag;
+    FHasTag: Boolean;
     FIsArray: Boolean;
     constructor Create(const AName: string);
-    function GetTag(AWireType: TWireType): UInt32; inline;
   end;
 
   TUTF8Encoding = class(System.SysUtils.TUTF8Encoding)
@@ -64,6 +64,7 @@ type
       procedure BeginDynamicArray(var ALength: Integer);
       procedure EndDynamicArray;
 
+      function SkipField: Boolean;
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
       function SkipCaseBranch(ABranch: Integer): Boolean;
@@ -94,11 +95,6 @@ begin
   FFieldName := AName;
 end;
 
-function TFieldContext.GetTag(AWireType: TWireType): UInt32;
-begin
-  Result := AWireType.CombineWith(FFieldTag);
-end;
-
 { TUTF8Encoding }
 
 function TUTF8Encoding.GetBytes(Chars: PChar; CharCount: Integer; Bytes: PByte; ByteCount: Integer): Integer;
@@ -125,7 +121,15 @@ end;
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
   if AAttribute is ProtobufAttribute then
-    FFieldContexts.Peek.FFieldTag := (AAttribute as ProtobufAttribute).FieldTag;
+    begin
+      if FFieldContexts.Count = 0 then
+        raise EProtobufError.Create('Only fields can be marked with a Protobuf tag');
+      with FFieldContexts.Peek do
+        begin
+          FFieldTag := (AAttribute as ProtobufAttribute).FieldTag;
+          FHasTag   := True;
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
@@ -141,25 +145,29 @@ end;
 
 procedure TOutputSerializer.BeginLengthPrefixedWithUnknownSize;
 begin
+  Assert(FFieldContexts.Count > 0);
   with FFieldContexts.Peek do
     begin
-      Pack(VarInt(GetTag(TWireType.LengthPrefixed)));
+      Pack(TWireType.LengthPrefixed, FFieldTag);
       FStartPos := Skip(CLengthPrefixReservedSize);
     end;
 end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Static arrays are not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
+  Assert(FFieldContexts.Count > 0);
   FFieldContexts.Peek.FIsArray := True;
 end;
 
 procedure TOutputSerializer.EndField;
 begin
+  Assert(FFieldContexts.Count > 0);
   FFieldContexts.Pop;
 end;
 
@@ -175,6 +183,7 @@ var
   LengthPrefix: VarInt;
   PrefixDiff  : Integer;
 begin
+  Assert(FFieldContexts.Count > 0);
   WrittenCount := Skip(0) - FFieldContexts.Peek.FStartPos;
   LengthPrefix := VarInt(WrittenCount);
   PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
@@ -193,6 +202,7 @@ end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
+  Assert(FFieldContexts.Count > 0);
   with FFieldContexts.Peek do
     begin
       if FIsArray and (FTypeKind in CPackedArrayTypeKinds) then
@@ -214,6 +224,12 @@ end;
 function TOutputSerializer.SkipEnumNames: Boolean;
 begin
   Result := True;
+end;
+
+function TOutputSerializer.SkipField: Boolean;
+begin
+  Assert(FFieldContexts.Count > 0);
+  Result := not FFieldContexts.Peek.FHasTag;
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
@@ -242,16 +258,19 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Int8 is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Int16 is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
@@ -259,19 +278,19 @@ begin
       if FTypeName = 'SINT32' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(SignedInt(AValue));
         end
       else if FTypeName = 'SFIXED32' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType._32bit)));
+            Pack(TWireType._32bit, FFieldTag);
           Pack(FixedInt32(AValue));
         end
       else
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(VarInt(AValue));
         end;
     end;
@@ -279,6 +298,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
@@ -286,19 +306,19 @@ begin
       if FTypeName = 'SINT64' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(SignedInt(AValue));
         end
       else if FTypeName = 'SFIXED64' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType._64bit)));
+            Pack(TWireType._64bit, FFieldTag);
           Pack(FixedInt32(AValue));
         end
       else
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(VarInt(AValue));
         end;
     end;
@@ -306,30 +326,33 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
+  Assert(FFieldContexts.Count > 0);
   if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
     raise EProtobufError.Create('UInt8 is not supported in Protobuf');
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
     if not FIsArray then
-      Pack(VarInt(GetTag(TWireType.VarInt)));
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
+  Assert(FFieldContexts.Count > 0);
   if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
     raise EProtobufError.Create('UInt16 is not supported in Protobuf');
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
     if not FIsArray then
-      Pack(VarInt(GetTag(TWireType.VarInt)));
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
@@ -337,13 +360,13 @@ begin
       if FTypeName = 'FIXED32' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType._32bit)));
+            Pack(TWireType._32bit, FFieldTag);
           Pack(FixedInt32(AValue));
         end
       else
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(VarInt(AValue));
         end;
     end;
@@ -351,6 +374,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
@@ -358,13 +382,13 @@ begin
       if FTypeName = 'FIXED64' then
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType._64bit)));
+            Pack(TWireType._64bit, FFieldTag);
           Pack(FixedInt64(AValue));
         end
       else
         begin
           if not FIsArray then
-            Pack(VarInt(GetTag(TWireType.VarInt)));
+            Pack(TWireType.VarInt, FFieldTag);
           Pack(VarInt(AValue));
         end;
     end;
@@ -372,51 +396,59 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
     if not FIsArray then
-      Pack(VarInt(GetTag(TWireType._32bit)));
+      Pack(TWireType._32bit, FFieldTag);
   Pack(FixedInt32(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
     Exit;
   with FFieldContexts.Peek do
     if not FIsArray then
-      Pack(VarInt(GetTag(TWireType._64bit)));
+      Pack(TWireType._64bit, FFieldTag);
   Pack(FixedInt64(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Extended);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Extended is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Comp is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('Currency is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: ShortString);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('ShortString is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: AnsiString);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('AnsiString is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: WideString);
 begin
+  Assert(FFieldContexts.Count > 0);
   raise EProtobufError.Create('WideString is not supported in Protobuf');
 end;
 
@@ -425,10 +457,11 @@ var
   Count: Integer;
   Start: PByte;
 begin
+  Assert(FFieldContexts.Count > 0);
   if AValue.IsEmpty then
     Exit;
   with FFieldContexts.Peek do
-    Pack(VarInt(GetTag(TWireType.LengthPrefixed)));
+    Pack(TWireType.LengthPrefixed, FFieldTag);
   Count := FUTF8Encoding.GetByteCount(AValue);
   Pack(VarInt(Count));
   Start := Require(Count);
@@ -438,10 +471,11 @@ end;
 
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
+  Assert(FFieldContexts.Count > 0);
   if AByteCount = 0 then
     Exit;
   with FFieldContexts.Peek do
-    Pack(VarInt(GetTag(TWireType.LengthPrefixed)));
+    Pack(TWireType.LengthPrefixed, FFieldTag);
   Pack(VarInt(AByteCount));
   Write(AValue^, AByteCount);
 end;

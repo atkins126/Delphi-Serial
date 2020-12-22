@@ -101,17 +101,13 @@ type
       [TestCase('One', '1')]
       [TestCase('Highest value', '9223372036854775807')]
       procedure TestPackAndParseFixed64(AValue: Fixed64);
-  end;
 
-  [TestFixture]
-  TWireTypeTest = class
-    public
       [Test]
-      [TestCase('First wire type and first field tag', '0,1,8')]
-      [TestCase('First wire type and last field tag', '0,536870911,4294967288')]
-      [TestCase('Last wire type and first field tag', '5,1,13')]
-      [TestCase('Last wire type and last field tag', '5,536870911,4294967293')]
-      procedure TestCombineAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
+      [TestCase('First wire type and first field tag', '0,1')]
+      [TestCase('First wire type and last field tag', '0,536870911')]
+      [TestCase('Last wire type and first field tag', '5,1')]
+      [TestCase('Last wire type and last field tag', '5,536870911')]
+      procedure TestPackAndParseWireTypeAndFieldTag(AWireType: Integer; AFieldTag: FieldTag);
   end;
 
 implementation
@@ -253,15 +249,16 @@ begin
   Assert.AreEqual(AValue, UInt64(Target));
 end;
 
-{ TWireTypeTest }
-
-procedure TWireTypeTest.TestCombineAndExtract(AWireType: Integer; AFieldTag: FieldTag; AExpectedValue: UInt32);
+procedure TSerializerTest.TestPackAndParseWireTypeAndFieldTag(AWireType: Integer; AFieldTag: FieldTag);
 var
-  WireType: TWireType;
+  TargetWireType: TWireType;
+  TargetFieldTag: FieldTag;
 begin
-  Assert.AreEqual(AExpectedValue, TWireType(AWireType).CombineWith(AFieldTag));
-  Assert.AreEqual(AFieldTag, WireType.ExtractFrom(AExpectedValue));
-  Assert.AreEqual(TWireType(AWireType), WireType);
+  FSerializer.Pack(TWireType(AWireType), AFieldTag);
+  FStream.Position := 0;
+  FSerializer.Parse(TargetWireType, TargetFieldTag);
+  Assert.AreEqual(TWireType(AWireType), TargetWireType);
+  Assert.AreEqual(AFieldTag, TargetFieldTag);
 end;
 
 initialization

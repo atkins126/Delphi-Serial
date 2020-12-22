@@ -222,6 +222,7 @@ begin
   with FSerializer.Setup do
     begin
       WillReturnDefault('SkipBranch', False);
+      WillReturn(False).When.SkipField;
       WillReturn(False).When.SkipEnumNames;
       WillReturn(False).When.SkipAttributes;
       WillReturn(True).When.ByteArrayAsAWhole;

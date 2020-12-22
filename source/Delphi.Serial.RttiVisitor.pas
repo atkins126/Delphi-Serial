@@ -140,7 +140,8 @@ begin
   if not FObserver.SkipAttributes then
     for Attribute in AField.GetAttributes do
       FObserver.Attribute(Attribute);
-  VisitType(PByte(AInstance) + AField.Offset, AField.FieldType, 1);
+  if not FObserver.SkipField then
+    VisitType(PByte(AInstance) + AField.Offset, AField.FieldType);
   FObserver.EndField;
 end;
 

@@ -11,6 +11,8 @@ uses
 
 type
 
+  TWireType = (VarInt = 0, _64bit = 1, LengthPrefixed = 2, _32bit = 5);
+
   TSerializer = class(TInterfacedObject)
     private
       FStream: TCustomMemoryStream;
@@ -26,37 +28,19 @@ type
       procedure Parse(var AValue: SignedInt); overload; inline;
       procedure Parse(var AValue: FixedInt32); overload; inline;
       procedure Parse(var AValue: FixedInt64); overload; inline;
+      procedure Parse(var AWireType: TWireType; var AFieldTag: FieldTag); overload; inline;
 
       procedure Pack(AValue: VarInt); overload; inline;
       procedure Pack(AValue: SignedInt); overload; inline;
       procedure Pack(AValue: FixedInt32); overload; inline;
       procedure Pack(AValue: FixedInt64); overload; inline;
+      procedure Pack(AWireType: TWireType; AFieldTag: FieldTag); overload; inline;
 
     public
       constructor Create(Stream: TCustomMemoryStream);
   end;
 
-  TWireType = (VarInt = 0, _64bit = 1, LengthPrefixed = 2, _32bit = 5);
-
-  TWireTypeHelper = record helper for TWireType
-    function CombineWith(AFieldTag: FieldTag): UInt32;
-    function ExtractFrom(AValue: UInt32): FieldTag;
-  end;
-
 implementation
-
-{ TWireTypeHelper }
-
-function TWireTypeHelper.CombineWith(AFieldTag: FieldTag): UInt32;
-begin
-  Result := (AFieldTag shl 3) or Ord(Self);
-end;
-
-function TWireTypeHelper.ExtractFrom(AValue: UInt32): FieldTag;
-begin
-  Self   := TWireType(AValue and 7);
-  Result := AValue shr 3;
-end;
 
 { TSerializer }
 
@@ -140,6 +124,23 @@ end;
 procedure TSerializer.Parse(var AValue: FixedInt64);
 begin
   read(AValue, SizeOf(AValue));
+end;
+
+procedure TSerializer.Pack(AWireType: TWireType; AFieldTag: FieldTag);
+var
+  Target: UInt32;
+begin
+  Target := (AFieldTag shl 3) or Ord(AWireType);
+  Pack(VarInt(Target));
+end;
+
+procedure TSerializer.Parse(var AWireType: TWireType; var AFieldTag: FieldTag);
+var
+  Source: VarInt;
+begin
+  Parse(Source);
+  AWireType := TWireType(UInt32(Source) and 7);
+  AFieldTag := UInt32(Source) shr 3;
 end;
 
 end.

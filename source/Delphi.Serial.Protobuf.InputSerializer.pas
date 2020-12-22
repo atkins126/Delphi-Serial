@@ -39,6 +39,7 @@ type
       procedure BeginDynamicArray(var ALength: Integer);
       procedure EndDynamicArray;
 
+      function SkipField: Boolean;
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
       function SkipCaseBranch(ABranch: Integer): Boolean;
@@ -132,6 +133,11 @@ end;
 function TInputSerializer.SkipEnumNames: Boolean;
 begin
   Result := True;
+end;
+
+function TInputSerializer.SkipField: Boolean;
+begin
+  Result := False;
 end;
 
 function TInputSerializer.SkipAttributes: Boolean;

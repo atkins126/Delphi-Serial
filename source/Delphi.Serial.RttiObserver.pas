@@ -35,6 +35,7 @@ type
     procedure BeginDynamicArray(var ALength: Integer);
     procedure EndDynamicArray;
 
+    function SkipField: Boolean;
     function SkipEnumNames: Boolean;
     function SkipAttributes: Boolean;
     function SkipCaseBranch(ABranch: Integer): Boolean;
