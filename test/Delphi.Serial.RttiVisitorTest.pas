@@ -208,6 +208,18 @@ uses
   Delphi.Serial.RttiVisitor,
   System.Rtti;
 
+{ TMyRecordHelper }
+
+procedure TMyRecordHelper.Serialize(ASerializer: IRttiObserver);
+var
+  Visitor: TRttiVisitor;
+begin
+  Visitor.Initialize(ASerializer);
+  Visitor.Visit(Self);
+end;
+
+{ TRttiVisitorTest }
+
 procedure TRttiVisitorTest.Setup;
 begin
   FMyRecord := Default (TMyRecord);
@@ -288,16 +300,6 @@ begin
     end;
   FMyRecord.Serialize(FSerializer);
   FSerializer.VerifyAll;
-end;
-
-{ TMyRecordHelper }
-
-procedure TMyRecordHelper.Serialize(ASerializer: IRttiObserver);
-var
-  Visitor: TRttiVisitor;
-begin
-  Visitor.Initialize(ASerializer);
-  Visitor.Visit(Self);
 end;
 
 initialization

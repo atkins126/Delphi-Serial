@@ -107,6 +107,8 @@
         <DCCReference Include="..\test\Delphi.Serial.CborTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.ProtobufUtilsTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.Protobuf.SerializerTest.pas"/>
+        <DCCReference Include="..\test\Delphi.Serial.Protobuf.OutputSerializerTest.pas"/>
+        <DCCReference Include="..\generated\Schema.Addressbook.Proto.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

@@ -20,6 +20,7 @@ type
     FFieldTag: FieldTag;
     FHasTag: Boolean;
     FIsArray: Boolean;
+    FIsPacked: Boolean;
     constructor Create(const AName: string);
   end;
 
@@ -75,8 +76,8 @@ type
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     const
-      CLengthPrefixReservedSize = 2; // space reserved for a word-sized VarInt
-      CPackedArrayTypeKinds     = [tkInteger, tkFloat, tkEnumeration, tkInt64];
+      CLengthPrefixReservedSize    = 2; // space reserved for a word-sized VarInt
+      CPackedArrayElementTypeKinds = [tkInteger, tkFloat, tkEnumeration, tkInt64];
 
     public
       constructor Create(Stream: TCustomMemoryStream);
@@ -185,14 +186,17 @@ var
 begin
   Assert(FFieldContexts.Count > 0);
   WrittenCount := Skip(0) - FFieldContexts.Peek.FStartPos;
-  LengthPrefix := VarInt(WrittenCount);
-  PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
-  Skip(- WrittenCount);
-  if PrefixDiff <> 0 then
-    Move(WrittenCount, PrefixDiff); // move memory by a few bytes to accommodate the length prefix
-  Skip(- CLengthPrefixReservedSize);
-  Pack(LengthPrefix);
-  Skip(WrittenCount);
+  if WrittenCount > 0 then
+    begin
+      LengthPrefix := VarInt(WrittenCount);
+      PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
+      Skip(- WrittenCount);
+      if PrefixDiff <> 0 then
+        Move(WrittenCount, PrefixDiff); // move memory by a few bytes to accommodate the length prefix
+      Skip(- CLengthPrefixReservedSize);
+      Pack(LengthPrefix);
+      Skip(WrittenCount);
+    end;
 end;
 
 procedure TOutputSerializer.EndStaticArray;
@@ -205,7 +209,8 @@ begin
   Assert(FFieldContexts.Count > 0);
   with FFieldContexts.Peek do
     begin
-      if FIsArray and (FTypeKind in CPackedArrayTypeKinds) then
+      Assert(FIsArray);
+      if FIsPacked then
         EndLengthPrefixedWithUnknownSize;
       FIsArray := False;
     end;
@@ -249,8 +254,12 @@ begin
       begin
         FTypeName := AName.ToUpper; // uppercase so we can easily test for equality
         FTypeKind := AKind;
-        if FIsArray and (FTypeKind in CPackedArrayTypeKinds) then
-          BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+        if FIsArray then            // we are dealing with the array element type
+          begin
+            FIsPacked := AKind in CPackedArrayElementTypeKinds;
+            if FIsPacked then
+              BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+          end;
       end
   else if AKind <> tkRecord then
     raise EProtobufError.Create('Only records can be serialized in Protobuf');
