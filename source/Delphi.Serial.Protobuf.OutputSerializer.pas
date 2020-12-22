@@ -6,6 +6,7 @@ uses
   Delphi.Serial.Protobuf.Serializer,
   Delphi.Serial.RttiObserver,
   System.Classes,
+  System.SysUtils,
   Delphi.Serial.Protobuf,
   System.Generics.Collections;
 
@@ -22,9 +23,15 @@ type
     function GetTag(AWireType: TWireType): UInt32; inline;
   end;
 
+  TUTF8Encoding = class(System.SysUtils.TUTF8Encoding)
+    protected
+      function GetBytes(Chars: PChar; CharCount: Integer; Bytes: PByte; ByteCount: Integer): Integer; override;
+  end;
+
   TOutputSerializer = class(TSerializer, IRttiObserver)
     private
       FFieldContexts: TStack<TFieldContext>;
+      FUTF8Encoding : TUTF8Encoding;
 
       procedure BeginLengthPrefixedWithUnknownSize;
       procedure EndLengthPrefixedWithUnknownSize;
@@ -68,7 +75,7 @@ type
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     const
-      CLengthPrefixReservedSize = 1; // space reserved for a single-byte VarInt
+      CLengthPrefixReservedSize = 2; // space reserved for a word-sized VarInt
       CPackedArrayTypeKinds     = [tkInteger, tkFloat, tkEnumeration, tkInt64];
 
     public
@@ -79,8 +86,7 @@ type
 implementation
 
 uses
-  Delphi.Serial.ProtobufUtils,
-  System.SysUtils;
+  Delphi.Serial.ProtobufUtils;
 
 { TFieldContext }
 
@@ -94,12 +100,20 @@ begin
   Result := AWireType.CombineWith(FFieldTag);
 end;
 
+{ TUTF8Encoding }
+
+function TUTF8Encoding.GetBytes(Chars: PChar; CharCount: Integer; Bytes: PByte; ByteCount: Integer): Integer;
+begin
+  Result := inherited;
+end;
+
 { TOutputSerializer }
 
 constructor TOutputSerializer.Create(Stream: TCustomMemoryStream);
 begin
   inherited;
   FFieldContexts := TStack<TFieldContext>.Create;
+  FUTF8Encoding  := TUTF8Encoding.Create;
 end;
 
 destructor TOutputSerializer.Destroy;
@@ -109,6 +123,7 @@ begin
   for Context in FFieldContexts do
     Context.Free; // this should not happen if the serializer was used correctly
   FFieldContexts.Free;
+  FUTF8Encoding.Free;
   inherited;
 end;
 
@@ -168,7 +183,7 @@ begin
   PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
   Skip(- WrittenCount);
   if PrefixDiff <> 0 then
-    Move(WrittenCount, PrefixDiff); // move memory by a few bytes to allow space for the length prefix
+    Move(WrittenCount, PrefixDiff); // move memory by a few bytes to accommodate the length prefix
   Skip(- CLengthPrefixReservedSize);
   Pack(LengthPrefix);
   Skip(WrittenCount);
@@ -411,15 +426,18 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UnicodeString);
 var
-  Bytes: TBytes;
+  Count: Integer;
+  Start: PByte;
 begin
   if AValue.IsEmpty then
     Exit;
   with FFieldContexts.Peek do
     Pack(VarInt(GetTag(TWireType.LengthPrefixed)));
-  Bytes := TEncoding.UTF8.GetBytes(AValue);
-  Pack(VarInt(Length(Bytes)));
-  Write(Bytes[0], Length(Bytes));
+  Count := FUTF8Encoding.GetByteCount(AValue);
+  Pack(VarInt(Count));
+  Start := Require(Count);
+  Count := FUTF8Encoding.GetBytes(PChar(AValue), AValue.Length, Start, Count);
+  Skip(Count);
 end;
 
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);

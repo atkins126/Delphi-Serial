@@ -16,7 +16,8 @@ type
       FStream: TCustomMemoryStream;
 
     protected
-      procedure Move(ACount, ADisplacement: Integer);
+      procedure Move(ACount, ADisplacement: Integer); inline;
+      function Require(ACount: Integer): Pointer; inline;
       function Skip(ACount: Integer): Int64; inline;
       function Read(var AValue; ACount: Integer): Integer; inline;
       function Write(const AValue; ACount: Integer): Integer; inline;
@@ -66,16 +67,22 @@ end;
 
 procedure TSerializer.Move(ACount, ADisplacement: Integer);
 var
+  Start: PByte;
+begin
+  Start := Require(ACount + ADisplacement);
+  System.Move(Start^, (Start + ADisplacement)^, ACount);
+end;
+
+function TSerializer.Require(ACount: Integer): Pointer;
+var
   CurrentPos  : Int64;
-  StartPointer: PByte;
   RequiredSize: Int64;
 begin
   CurrentPos     := FStream.Position;
-  StartPointer   := PByte(FStream.Memory) + CurrentPos;
-  RequiredSize   := CurrentPos + ACount + ADisplacement;
+  RequiredSize   := CurrentPos + ACount;
   if FStream.Size < RequiredSize then
-    FStream.Size := RequiredSize; // increase stream capacity to hold the displaced data
-  System.Move(StartPointer^, (StartPointer + ADisplacement)^, ACount);
+    FStream.Size := RequiredSize; // increase stream size to hold the required data
+  Result         := PByte(FStream.Memory) + CurrentPos;
 end;
 
 function TSerializer.Skip(ACount: Integer): Int64;
