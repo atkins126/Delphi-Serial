@@ -135,15 +135,17 @@ end;
 
 procedure TSerializerTest.TestSkipAndMove(ACount: Integer);
 var
-  Pos   : Int64;
-  Target: VarInt;
+  StreamPos   : Int64;
+  WrittenCount: Integer;
+  Target      : VarInt;
 begin
   FSerializer.Pack(VarInt(0));
-  Pos := FStream.Position;
+  StreamPos := FStream.Position;
   FSerializer.Pack(VarInt(High(Integer)));
   FSerializer.Pack(VarInt(1));
-  FSerializer.Skip(Pos - FStream.Position);
-  FSerializer.Move(ACount);
+  WrittenCount := FStream.Position - StreamPos;
+  FSerializer.Skip(- WrittenCount);
+  FSerializer.Move(WrittenCount, ACount);
   FSerializer.Skip(ACount);
   FSerializer.Parse(Target);
   Assert.AreEqual(High(Integer), UInt32(Target));

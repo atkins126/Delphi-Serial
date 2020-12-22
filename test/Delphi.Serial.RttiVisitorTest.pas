@@ -264,12 +264,7 @@ procedure TRttiVisitorTest.TestVisit;
 begin
   with FSerializer.Setup do
     begin
-      Expect.Once.When.BeginRecord('TMyRecord');
-      Expect.Once.When.BeginRecord('TMyInnerRec');
-      Expect.Once.When.BeginRecord('TMyInnerRec2');
-      Expect.Once.When.BeginRecord('TMyInnerRec3');
-      Expect.Once.When.BeginRecord('TMyInnerRec4');
-      Expect.Exactly(10).When.BeginRecord('TMyElement');
+      Expect.Exactly(15).When.BeginRecord;
       Expect.Once.When.BeginField('FInnerRec');
       Expect.Once.When.BeginField('FNoRtti');
       Expect.Exactly(3).When.BeginField('FArrayOfNoRtti');

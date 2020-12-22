@@ -97,7 +97,7 @@ var
   CaseBranch: Integer;
   SkipBranch: Boolean;
 begin
-  FObserver.BeginRecord(AType.Name);
+  FObserver.BeginRecord;
   if not FObserver.SkipAttributes then
     for Attribute in AType.GetAttributes do
       FObserver.Attribute(Attribute);

@@ -30,7 +30,7 @@ type
       procedure Value(var AValue: UnicodeString); overload;
       procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
-      procedure BeginRecord(const AName: string);
+      procedure BeginRecord;
       procedure EndRecord;
       procedure BeginField(const AName: string);
       procedure EndField;
@@ -85,7 +85,7 @@ begin
 
 end;
 
-procedure TInputSerializer.BeginRecord(const AName: string);
+procedure TInputSerializer.BeginRecord;
 begin
 
 end;
