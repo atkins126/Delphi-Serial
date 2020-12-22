@@ -273,9 +273,9 @@ begin
       Expect.Exactly(10).When.EnumName('B');
       Expect.Exactly(10).When.EnumName('C');
       Expect.Exactly(10).When.EnumName('D');
-      Expect.Exactly(35).When.TypeKind(tkEnumeration);
       Expect.Exactly(3).When.EnumName('[Unknown]');
-      Expect.Exactly(10).When.TypeName('TMyType');
+      Expect.Exactly(10).When.DataType('TMyType', It1.IsAny<TTypeKind>);
+      Expect.Exactly(35).When.DataType(It0.IsAny<string>, tkEnumeration);
       Expect.Exactly(24).When.BeginStaticArray(4);
       Expect.Exactly('BeginDynamicArray', 96);
       Expect.Exactly('EndRecord', 15);

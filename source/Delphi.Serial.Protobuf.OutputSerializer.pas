@@ -69,8 +69,7 @@ type
       function SkipCaseBranch(ABranch: Integer): Boolean;
       function ByteArrayAsAWhole: Boolean;
 
-      procedure TypeKind(AKind: TTypeKind);
-      procedure TypeName(const AName: string);
+      procedure DataType(const AName: string; AKind: TTypeKind);
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
@@ -112,16 +111,12 @@ end;
 constructor TOutputSerializer.Create(Stream: TCustomMemoryStream);
 begin
   inherited;
-  FFieldContexts := TStack<TFieldContext>.Create;
+  FFieldContexts := TObjectStack<TFieldContext>.Create;
   FUTF8Encoding  := TUTF8Encoding.Create;
 end;
 
 destructor TOutputSerializer.Destroy;
-var
-  Context: TFieldContext;
 begin
-  for Context in FFieldContexts do
-    Context.Free; // this should not happen if the serializer was used correctly
   FFieldContexts.Free;
   FUTF8Encoding.Free;
   inherited;
@@ -140,7 +135,8 @@ end;
 
 procedure TOutputSerializer.BeginRecord;
 begin
-  BeginLengthPrefixedWithUnknownSize;
+  if FFieldContexts.Count > 0 then
+    BeginLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.BeginLengthPrefixedWithUnknownSize;
@@ -164,12 +160,13 @@ end;
 
 procedure TOutputSerializer.EndField;
 begin
-  FFieldContexts.Pop.Free;
+  FFieldContexts.Pop;
 end;
 
 procedure TOutputSerializer.EndRecord;
 begin
-  EndLengthPrefixedWithUnknownSize;
+  if FFieldContexts.Count > 0 then
+    EndLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.EndLengthPrefixedWithUnknownSize;
@@ -229,19 +226,18 @@ begin
   Result := True;
 end;
 
-procedure TOutputSerializer.TypeKind(AKind: TTypeKind);
+procedure TOutputSerializer.DataType(const AName: string; AKind: TTypeKind);
 begin
-  with FFieldContexts.Peek do
-    begin
-      FTypeKind := AKind;
-      if FIsArray and (FTypeKind in CPackedArrayTypeKinds) then
-        BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
-    end;
-end;
-
-procedure TOutputSerializer.TypeName(const AName: string);
-begin
-  FFieldContexts.Peek.FTypeName := AName.ToUpper; // uppercase so we can easily test for equality
+  if FFieldContexts.Count > 0 then
+    with FFieldContexts.Peek do
+      begin
+        FTypeName := AName.ToUpper; // uppercase so we can easily test for equality
+        FTypeKind := AKind;
+        if FIsArray and (FTypeKind in CPackedArrayTypeKinds) then
+          BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+      end
+  else if AKind <> tkRecord then
+    raise EProtobufError.Create('Only records can be serialized in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);

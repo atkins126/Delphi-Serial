@@ -40,8 +40,7 @@ type
     function SkipCaseBranch(ABranch: Integer): Boolean;
     function ByteArrayAsAWhole: Boolean;
 
-    procedure TypeKind(AKind: TTypeKind);
-    procedure TypeName(const AName: string);
+    procedure DataType(const AName: string; AKind: TTypeKind);
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);
   end;

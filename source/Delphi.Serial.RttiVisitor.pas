@@ -63,8 +63,7 @@ begin
   if not Assigned(AType) then
     Exit;
 
-  FObserver.TypeName(AType.Name);
-  FObserver.TypeKind(AType.TypeKind);
+  FObserver.DataType(AType.Name, AType.TypeKind);
 
   if AType is TRttiStringType then
     Visit(AInstance, AType as TRttiStringType, ACount)

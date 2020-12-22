@@ -17,7 +17,7 @@ type
 
     protected
       procedure Move(ACount, ADisplacement: Integer); inline;
-      function Require(ACount: Integer): Pointer; inline;
+      function Require(ACount: Integer): Pointer;
       function Skip(ACount: Integer): Int64; inline;
       function Read(var AValue; ACount: Integer): Integer; inline;
       function Write(const AValue; ACount: Integer): Integer; inline;
