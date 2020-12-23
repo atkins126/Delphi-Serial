@@ -16,6 +16,7 @@ type
     FFieldName: string;
     FTypeName: string;
     FTypeKind: TTypeKind;
+    FBeforePos: Int64;
     FStartPos: Int64;
     FFieldTag: FieldTag;
     FHasTag: Boolean;
@@ -36,6 +37,7 @@ type
 
       procedure BeginLengthPrefixedWithUnknownSize;
       procedure EndLengthPrefixedWithUnknownSize;
+      procedure PackLengthPrefix(WrittenCount: Integer);
 
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -149,8 +151,9 @@ begin
   Assert(FFieldContexts.Count > 0);
   with FFieldContexts.Peek do
     begin
+      FBeforePos := Skip(0);
       Pack(TWireType.LengthPrefixed, FFieldTag);
-      FStartPos := Skip(CLengthPrefixReservedSize);
+      FStartPos  := Skip(CLengthPrefixReservedSize);
     end;
 end;
 
@@ -181,22 +184,32 @@ end;
 procedure TOutputSerializer.EndLengthPrefixedWithUnknownSize;
 var
   WrittenCount: Integer;
+begin
+  Assert(FFieldContexts.Count > 0);
+  with FFieldContexts.Peek do
+    begin
+      WrittenCount := Skip(0) - FStartPos;
+      Assert(WrittenCount >= 0);
+      if WrittenCount > 0 then
+        PackLengthPrefix(WrittenCount)
+      else
+        Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
+    end;
+end;
+
+procedure TOutputSerializer.PackLengthPrefix(WrittenCount: Integer);
+var
   LengthPrefix: VarInt;
   PrefixDiff  : Integer;
 begin
-  Assert(FFieldContexts.Count > 0);
-  WrittenCount := Skip(0) - FFieldContexts.Peek.FStartPos;
-  if WrittenCount > 0 then
-    begin
-      LengthPrefix := VarInt(WrittenCount);
-      PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
-      Skip(- WrittenCount);
-      if PrefixDiff <> 0 then
-        Move(WrittenCount, PrefixDiff); // move memory by a few bytes to accommodate the length prefix
-      Skip(- CLengthPrefixReservedSize);
-      Pack(LengthPrefix);
-      Skip(WrittenCount);
-    end;
+  LengthPrefix := VarInt(WrittenCount);
+  PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
+  Skip(- WrittenCount);
+  if PrefixDiff <> 0 then
+    Move(WrittenCount, PrefixDiff); // move memory by a few bytes to fit the length prefix
+  Skip(- CLengthPrefixReservedSize);
+  Pack(LengthPrefix);
+  Skip(WrittenCount);
 end;
 
 procedure TOutputSerializer.EndStaticArray;
@@ -281,7 +294,7 @@ procedure TOutputSerializer.Value(var AValue: Int32);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     begin
       if FTypeName = 'SINT32' then
@@ -309,7 +322,7 @@ procedure TOutputSerializer.Value(var AValue: Int64);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     begin
       if FTypeName = 'SINT64' then
@@ -339,7 +352,7 @@ begin
   if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
     raise EProtobufError.Create('UInt8 is not supported in Protobuf');
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     if not FIsArray then
       Pack(TWireType.VarInt, FFieldTag);
@@ -352,7 +365,7 @@ begin
   if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
     raise EProtobufError.Create('UInt16 is not supported in Protobuf');
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     if not FIsArray then
       Pack(TWireType.VarInt, FFieldTag);
@@ -363,7 +376,7 @@ procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     begin
       if FTypeName = 'FIXED32' then
@@ -385,7 +398,7 @@ procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     begin
       if FTypeName = 'FIXED64' then
@@ -407,7 +420,7 @@ procedure TOutputSerializer.Value(var AValue: Single);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     if not FIsArray then
       Pack(TWireType._32bit, FFieldTag);
@@ -418,7 +431,7 @@ procedure TOutputSerializer.Value(var AValue: Double);
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     if not FIsArray then
       Pack(TWireType._64bit, FFieldTag);
@@ -468,7 +481,7 @@ var
 begin
   Assert(FFieldContexts.Count > 0);
   if AValue.IsEmpty then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     Pack(TWireType.LengthPrefixed, FFieldTag);
   Count := FUTF8Encoding.GetByteCount(AValue);
@@ -482,7 +495,7 @@ procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
   Assert(FFieldContexts.Count > 0);
   if AByteCount = 0 then
-    Exit;
+    Exit; // omit empty value from output
   with FFieldContexts.Peek do
     Pack(TWireType.LengthPrefixed, FFieldTag);
   Pack(VarInt(AByteCount));

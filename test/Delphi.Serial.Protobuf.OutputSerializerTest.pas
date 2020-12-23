@@ -72,14 +72,14 @@ end;
 
 procedure TOutputSerializerTest.TestSerializeAddressBook;
 const
-  CPerson: TPerson = (FName: 'abc');
+  CPerson: TPerson = (FName: 'abc'; FId: 1; FLastUpdated: (FSeconds: -1));
 var
   Addressbook: TAddressBook;
 begin
   Addressbook.FPeople := Addressbook.FPeople + [CPerson];
   Addressbook.Serialize(FSerializer);
-  Assert.AreEqual<Int64>(10, FStream.Position);
-//  SaveToFile('addressbook.data');
+  Assert.AreEqual<Int64>(22, FStream.Position);
+//  SaveToFile('delphi_addressbook.data');
 end;
 
 initialization
