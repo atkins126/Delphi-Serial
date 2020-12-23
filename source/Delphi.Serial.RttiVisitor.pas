@@ -64,6 +64,13 @@ begin
     Exit;
 
   FObserver.DataType(AType.Name, AType.TypeKind);
+  if ACount = 0 then
+    begin
+      Assert(not Assigned(AInstance));
+      if AType is TRttiDynamicArrayType then
+        Visit(nil, AType as TRttiDynamicArrayType);
+      Exit;
+    end;
 
   if AType is TRttiStringType then
     Visit(AInstance, AType as TRttiStringType, ACount)
@@ -291,8 +298,18 @@ var
   Count : Integer;
   Length: NativeInt;
 begin
+  if not Assigned(AInstance) then           // handle the case of visiting an array with zero sub-arrays
+    begin
+      Count := - 1;                         // indicate that there is no instance of this sub-array type
+      FObserver.BeginDynamicArray(Count);
+      VisitType(nil, AType.ElementType, 0); // keep recursing until the innermost element type is visited
+      FObserver.EndDynamicArray;
+      Exit;
+    end;
+
   Count := DynArraySize(Pointer(AInstance^));
   FObserver.BeginDynamicArray(Count);
+  Assert(Count >= 0); // protect against bad input
   if Count <> DynArraySize(Pointer(AInstance^)) then
     begin
       Length := Count;

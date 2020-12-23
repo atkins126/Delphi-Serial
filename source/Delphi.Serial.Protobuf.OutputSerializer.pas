@@ -166,7 +166,12 @@ end;
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
   Assert(FFieldContexts.Count > 0);
-  FFieldContexts.Peek.FIsArray := True;
+  with FFieldContexts.Peek do
+    begin
+      if FIsArray then
+        raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
+      FIsArray := True;
+    end;
 end;
 
 procedure TOutputSerializer.EndField;
@@ -349,26 +354,30 @@ end;
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   Assert(FFieldContexts.Count > 0);
-  if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
-    raise EProtobufError.Create('UInt8 is not supported in Protobuf');
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with FFieldContexts.Peek do
-    if not FIsArray then
-      Pack(TWireType.VarInt, FFieldTag);
+    begin
+      if (not FIsArray) and (FTypeKind <> tkEnumeration) then
+        raise EProtobufError.Create('UInt8 is not supported in Protobuf');
+      if AValue = 0 then
+        Exit; // omit empty value from output
+      if not FIsArray then
+        Pack(TWireType.VarInt, FFieldTag);
+    end;
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   Assert(FFieldContexts.Count > 0);
-  if FFieldContexts.Peek.FTypeKind <> tkEnumeration then
-    raise EProtobufError.Create('UInt16 is not supported in Protobuf');
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with FFieldContexts.Peek do
-    if not FIsArray then
-      Pack(TWireType.VarInt, FFieldTag);
+    begin
+      if FTypeKind <> tkEnumeration then
+        raise EProtobufError.Create('UInt16 is not supported in Protobuf');
+      if AValue = 0 then
+        Exit; // omit empty value from output
+      if not FIsArray then
+        Pack(TWireType.VarInt, FFieldTag);
+    end;
   Pack(VarInt(AValue));
 end;
 

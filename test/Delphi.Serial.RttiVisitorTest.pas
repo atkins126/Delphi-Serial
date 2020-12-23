@@ -88,6 +88,7 @@ type
     FArrayOfWideString: TArray<TArray<WideString>>;
     FArrayOfUnicodeString: TArray<TArray<UnicodeString>>;
     FArrayOfInnerRec4: TArray<TArray<TMyElement>>;
+    FArrayOfArrays: TArray<TArray<TArray<Boolean>>>;
   end;
 
   TMyInnerRec3 = record
@@ -191,6 +192,7 @@ type
       FSerializer: TMock<IRttiObserver>;
       FSaveOneof : Boolean;
       FOneofValue: TMyOneof;
+      FKeepEmpty : Boolean;
 
     public
       [Setup]
@@ -241,7 +243,10 @@ begin
       WillExecute('BeginDynamicArray',
           function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
-          args[1] := 2;
+          if FKeepEmpty then
+            FKeepEmpty := False
+          else
+            args[1] := 2;
         end);
       WillExecute('Attribute',
         function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
@@ -263,9 +268,16 @@ begin
         begin
           Result := TMyOneof(args[1].AsType<Integer>) <> FOneofValue;
         end);
+      WillExecute('BeginField',
+        function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
+        begin
+          if args[1].AsType<string> = 'FArrayOfArrays' then
+            FKeepEmpty := True;
+        end);
     end;
 
   FSaveOneof := False;
+  FKeepEmpty := False;
 end;
 
 procedure TRttiVisitorTest.TearDown;
@@ -288,11 +300,11 @@ begin
       Expect.Exactly(10).When.EnumName('D');
       Expect.Exactly(3).When.EnumName('[Unknown]');
       Expect.Exactly(10).When.DataType('TMyType', It1.IsAny<TTypeKind>);
-      Expect.Exactly(35).When.DataType(It0.IsAny<string>, tkEnumeration);
+      Expect.Exactly(36).When.DataType(It0.IsAny<string>, tkEnumeration);
       Expect.Exactly(24).When.BeginStaticArray(4);
-      Expect.Exactly('BeginDynamicArray', 96);
+      Expect.Exactly('BeginDynamicArray', 99);
       Expect.Exactly('EndRecord', 15);
-      Expect.Exactly('EndField', 139);
+      Expect.Exactly('EndField', 140);
       Expect.Exactly('Attribute', 22);
       Expect.Exactly('Value', 270);
       Expect.Exactly(10).When.SkipCaseBranch(0);
