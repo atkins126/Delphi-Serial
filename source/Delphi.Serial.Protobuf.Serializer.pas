@@ -37,16 +37,16 @@ type
       procedure Pack(AWireType: TWireType; AFieldTag: FieldTag); overload; inline;
 
     public
-      constructor Create(Stream: TCustomMemoryStream);
+      constructor Create(AStream: TCustomMemoryStream);
   end;
 
 implementation
 
 { TSerializer }
 
-constructor TSerializer.Create(Stream: TCustomMemoryStream);
+constructor TSerializer.Create(AStream: TCustomMemoryStream);
 begin
-  FStream := Stream;
+  FStream := AStream;
 end;
 
 procedure TSerializer.Move(ACount, ADisplacement: Integer);

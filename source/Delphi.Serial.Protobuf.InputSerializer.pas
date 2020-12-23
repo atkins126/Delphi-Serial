@@ -50,7 +50,7 @@ type
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     public
-      constructor Create(Stream: TCustomMemoryStream);
+      constructor Create(AStream: TCustomMemoryStream);
       destructor Destroy; override;
   end;
 
@@ -58,7 +58,7 @@ implementation
 
 { TInputSerializer }
 
-constructor TInputSerializer.Create(Stream: TCustomMemoryStream);
+constructor TInputSerializer.Create(AStream: TCustomMemoryStream);
 begin
   inherited;
 
