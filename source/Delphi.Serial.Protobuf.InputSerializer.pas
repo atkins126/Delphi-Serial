@@ -5,7 +5,8 @@ interface
 uses
   Delphi.Serial.Protobuf.Serializer,
   Delphi.Serial.RttiObserver,
-  System.Classes;
+  System.Classes,
+  System.Rtti;
 
 type
 
@@ -43,9 +44,8 @@ type
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
       function SkipCaseBranch(ABranch: Integer): Boolean;
-      function ByteArrayAsAWhole: Boolean;
 
-      procedure DataType(const AName: string; AKind: TTypeKind);
+      procedure DataType(AType: TRttiType);
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
@@ -95,11 +95,6 @@ begin
 
 end;
 
-function TInputSerializer.ByteArrayAsAWhole: Boolean;
-begin
-  Result := True;
-end;
-
 procedure TInputSerializer.EndField;
 begin
 
@@ -145,7 +140,7 @@ begin
   Result := False;
 end;
 
-procedure TInputSerializer.DataType(const AName: string; AKind: TTypeKind);
+procedure TInputSerializer.DataType(AType: TRttiType);
 begin
 
 end;

@@ -4,6 +4,9 @@ unit Delphi.Serial.RttiObserver;
 
 interface
 
+uses
+  System.Rtti;
+
 type
 
   IRttiObserver = interface
@@ -39,9 +42,8 @@ type
     function SkipEnumNames: Boolean;
     function SkipAttributes: Boolean;
     function SkipCaseBranch(ABranch: Integer): Boolean;
-    function ByteArrayAsAWhole: Boolean;
 
-    procedure DataType(const AName: string; AKind: TTypeKind);
+    procedure DataType(AType: TRttiType);
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);
   end;

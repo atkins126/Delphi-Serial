@@ -16,25 +16,25 @@ type
   );
 
   TPhoneNumber = record
-    [Protobuf(1)] FNumber: string;
-    [Protobuf(2)] FType: TPhoneType;
+    [FieldTag(1)] FNumber: string;
+    [FieldTag(2)] FType: TPhoneType;
   end;
 
   TTimestamp = record
-    [Protobuf(1)] FSeconds: int64;
-    [Protobuf(2)] FNanos: int32;
+    [FieldTag(1)] FSeconds: int64;
+    [FieldTag(2)] FNanos: int32;
   end;
 
   TPerson = record
-    [Protobuf(1)] FName: string;
-    [Protobuf(2)] FId: int32;
-    [Protobuf(3)] FEmail: string;
-    [Protobuf(4)] FPhones: TArray<TPhoneNumber>;
-    [Protobuf(5)] FLastUpdated: TTimestamp;
+    [FieldTag(1)] FName: string;
+    [FieldTag(2)] FId: int32;
+    [FieldTag(3)] FEmail: string;
+    [FieldTag(4)] FPhones: TArray<TPhoneNumber>;
+    [FieldTag(5)] FLastUpdated: TTimestamp;
   end;
 
   TAddressBook = record
-    [Protobuf(1)] FPeople: TArray<TPerson>;
+    [FieldTag(1)] FPeople: TArray<TPerson>;
   end;
 
 implementation

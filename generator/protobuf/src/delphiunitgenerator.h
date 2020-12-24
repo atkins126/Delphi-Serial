@@ -23,6 +23,10 @@ private:
     {
         std::string name;
         std::string type;
+        bool required;
+        bool repeated;
+        bool packable;
+        bool packed;
         int tag;
     };
 

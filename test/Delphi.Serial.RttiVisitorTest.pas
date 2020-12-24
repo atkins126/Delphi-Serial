@@ -239,7 +239,6 @@ begin
       WillReturn(False).When.SkipField;
       WillReturn(False).When.SkipEnumNames;
       WillReturn(False).When.SkipAttributes;
-      WillReturn(True).When.ByteArrayAsAWhole;
       WillExecute('BeginDynamicArray',
           function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
@@ -299,14 +298,17 @@ begin
       Expect.Exactly(10).When.EnumName('C');
       Expect.Exactly(10).When.EnumName('D');
       Expect.Exactly(3).When.EnumName('[Unknown]');
-      Expect.Exactly(10).When.DataType('TMyType', It1.IsAny<TTypeKind>);
-      Expect.Exactly(36).When.DataType(It0.IsAny<string>, tkEnumeration);
+      Expect.Exactly(36).When.DataType(It0.Matches<TRttiType>(
+          function(AType: TRttiType): Boolean
+        begin
+          Result := AType is TRttiEnumerationType;
+        end));
       Expect.Exactly(24).When.BeginStaticArray(4);
       Expect.Exactly('BeginDynamicArray', 99);
       Expect.Exactly('EndRecord', 15);
       Expect.Exactly('EndField', 140);
       Expect.Exactly('Attribute', 22);
-      Expect.Exactly('Value', 270);
+      Expect.Exactly('Value', 276);
       Expect.Exactly(10).When.SkipCaseBranch(0);
       Expect.Exactly(10).When.SkipCaseBranch(1);
     end;

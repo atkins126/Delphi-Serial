@@ -12,7 +12,6 @@ type
     private
       FObserver: IRttiObserver;
       FContext : TRttiContext;
-      FByteType: TRttiType;
 
       procedure VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer = 1);
       procedure Visit(AInstance: Pointer; AType: TRttiRecordType); overload;
@@ -48,7 +47,6 @@ procedure TRttiVisitor.Initialize(AObserver: IRttiObserver);
 begin
   FObserver := AObserver;
   FContext  := TRttiContext.Create;
-  FByteType := FContext.GetType(TypeInfo(Byte));
 end;
 
 procedure TRttiVisitor.Visit<T>(var AValue: T);
@@ -63,7 +61,7 @@ begin
   if not Assigned(AType) then
     Exit;
 
-  FObserver.DataType(AType.Name, AType.TypeKind);
+  FObserver.DataType(AType);
   if ACount = 0 then
     begin
       Assert(not Assigned(AInstance));
@@ -216,8 +214,8 @@ begin
       for I := 0 to ACount - 1 do
         FObserver.Value(PShortint(AInstance)[I]);
     otUByte:
-      if (ACount > 1) and FObserver.ByteArrayAsAWhole then
-        FObserver.Value(AInstance, ACount)
+      if (ACount > 1) and (AType.Handle = TypeInfo(Byte)) then
+        FObserver.Value(AInstance, ACount) // visit byte array as a memory block
       else
         for I := 0 to ACount - 1 do
           FObserver.Value(PByte(AInstance)[I]);
@@ -249,11 +247,7 @@ var
   I: Integer;
 begin
   for I := 0 to ACount - 1 do
-    begin
-      FObserver.BeginStaticArray(AType.TypeSize);
-      VisitType(PByte(AInstance) + I * AType.TypeSize, FByteType, AType.TypeSize);
-      FObserver.EndStaticArray;
-    end;
+    FObserver.Value(PByte(AInstance) + I * AType.TypeSize, ACount);
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AEnumTypeInfo: Pointer);

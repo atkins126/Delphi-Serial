@@ -91,10 +91,18 @@ void DelphiUnitGenerator::Print(const EnumValueDescriptor *desc)
 
 void DelphiUnitGenerator::Print(const Field &field)
 {
+    std::string fieldoptions;
+    if (field.required) {
+        fieldoptions += ", Required";
+    }
+    if (field.packable && !field.packed) {
+        fieldoptions += ", UnPacked";
+    }
     _variables["fieldname"] = field.name;
-    _variables["fieldtype"] = field.type;
+    _variables["fieldtype"] = field.repeated ? GetArrayType(field.type) : field.type;
     _variables["fieldtag"] = std::to_string(field.tag);
-    _printer.Print(_variables, "[Protobuf($fieldtag$)] $fieldname$: $fieldtype$;\n");
+    _variables["fieldoptions"] = fieldoptions;
+    _printer.Print(_variables, "[FieldTag($fieldtag$)$fieldoptions$] $fieldname$: $fieldtype$;\n");
 }
 
 std::list<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Descriptor *desc)
@@ -102,12 +110,13 @@ std::list<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Descr
     std::list<Field> result;
     for (int i = 0; i < desc->field_count(); ++i) {
         const auto field = desc->field(i);
-        const auto fieldname = GetFieldName(field->name());
-        auto fieldtype = GetFieldType(field);
-        if (field->is_repeated()) {
-            fieldtype = GetArrayType(fieldtype);
-        }
-        result.push_back({fieldname, fieldtype, field->number()});
+        result.push_back({GetFieldName(field->name()),
+                          GetFieldType(field),
+                          field->is_required(),
+                          field->is_repeated(),
+                          field->is_packable(),
+                          field->is_packed(),
+                          field->number()});
     }
     return result;
 }

@@ -90,9 +90,13 @@ type
       class operator Explicit(AValue: Int64): FixedInt64; static; inline;
       class operator Explicit(AValue: UInt64): FixedInt64; static; inline;
       class operator Explicit(AValue: Double): FixedInt64; static; inline;
+      class operator Explicit(AValue: Comp): FixedInt64; static; inline;
+      class operator Explicit(AValue: Currency): FixedInt64; static; inline;
       class operator Explicit(AValue: FixedInt64): Int64; static; inline;
       class operator Explicit(AValue: FixedInt64): UInt64; static; inline;
       class operator Explicit(AValue: FixedInt64): Double; static; inline;
+      class operator Explicit(AValue: FixedInt64): Comp; static; inline;
+      class operator Explicit(AValue: FixedInt64): Currency; static; inline;
   end;
 
 implementation
@@ -286,6 +290,16 @@ begin
   Result.FValue := PUint64(Addr(AValue))^;
 end;
 
+class operator FixedInt64.Explicit(AValue: Comp): FixedInt64;
+begin
+  Result.FValue := PUint64(Addr(AValue))^;
+end;
+
+class operator FixedInt64.Explicit(AValue: Currency): FixedInt64;
+begin
+  Result.FValue := PUint64(Addr(AValue))^;
+end;
+
 class operator FixedInt64.Explicit(AValue: FixedInt64): UInt64;
 begin
   Result := AValue.FValue;
@@ -299,6 +313,16 @@ end;
 class operator FixedInt64.Explicit(AValue: FixedInt64): Double;
 begin
   Result := PDouble(Addr(AValue.FValue))^;
+end;
+
+class operator FixedInt64.Explicit(AValue: FixedInt64): Comp;
+begin
+  Result := PComp(Addr(AValue.FValue))^;
+end;
+
+class operator FixedInt64.Explicit(AValue: FixedInt64): Currency;
+begin
+  Result := PCurrency(Addr(AValue.FValue))^;
 end;
 
 end.

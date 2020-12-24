@@ -7,20 +7,22 @@ uses
   Delphi.Serial.RttiObserver,
   Delphi.Serial.Protobuf,
   System.Classes,
-  System.SysUtils;
+  System.SysUtils,
+  System.Rtti;
 
 type
 
   TFieldContext = record
     FFieldName: string;
-    FTypeName: string;
-    FTypeKind: TTypeKind;
     FBeforePos: Int64;
     FStartPos: Int64;
     FFieldTag: FieldTag;
-    FHasTag: Boolean;
+    FArrayLength: Integer;
+    FIsRequired: Boolean;
     FIsArray: Boolean;
     FIsPacked: Boolean;
+    FIsPackedArray: Boolean;
+    FIsBytes: Boolean;
     FIsSigned: Boolean;
     FIsFixed: Boolean;
     procedure Initialize(const AName: string);
@@ -30,24 +32,28 @@ type
 
   TUTF8Encoding = class(System.SysUtils.TUTF8Encoding)
     protected
-      function GetBytes(Chars: PChar; CharCount: Integer; Bytes: PByte; ByteCount: Integer): Integer; override;
+      function GetByteCount(AChars: PChar; ACharCount: Integer): Integer; override;
+      function GetBytes(AChars: PChar; ACharCount: Integer; ABytes: PByte; AByteCount: Integer): Integer; override;
   end;
 
   TOutputSerializer = class(TSerializer, IRttiObserver)
     private const
-      CInitialFieldRecursionCount  = 16; // start with this number of field recursion levels
-      CLengthPrefixReservedSize    = 2;  // space reserved for a VarInt with unknown size
-      CPackedArrayElementTypeKinds = [tkInteger, tkFloat, tkEnumeration, tkInt64];
+      CInitialFieldRecursionCount = 16; // start with this number of field recursion levels
+      CLengthPrefixReservedSize   = 2;  // space reserved for a VarInt with unknown size
+      CPackableElementTypeKinds   = [tkInteger, tkFloat, tkEnumeration, tkInt64];
 
     private
       FFieldContexts         : TArray<TFieldContext>;
       FFieldRecursion        : Integer;
+      FLimitMemoryUsage      : Boolean;
       class var FUTF8Encoding: TUTF8Encoding;
 
       function CurrentContext: PFieldContext; inline;
       procedure BeginLengthPrefixedWithUnknownSize;
       procedure EndLengthPrefixedWithUnknownSize;
       procedure PackLengthPrefix(WrittenCount: Integer);
+      procedure InitializeTypeFlags(AType: TRttiType);
+      procedure Utf8Value(AChars: PChar; ACharCount: Integer);
 
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -81,14 +87,13 @@ type
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
       function SkipCaseBranch(ABranch: Integer): Boolean;
-      function ByteArrayAsAWhole: Boolean;
 
-      procedure DataType(const AName: string; AKind: TTypeKind);
+      procedure DataType(AType: TRttiType);
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     public
-      constructor Create(AStream: TCustomMemoryStream);
+      constructor Create(AStream: TCustomMemoryStream; ALimitMemoryUsage: Boolean = False);
   end;
 
 implementation
@@ -102,22 +107,29 @@ procedure TFieldContext.Initialize(const AName: string);
 begin
   Self       := Default (TFieldContext);
   FFieldName := AName;
+  FIsPacked  := True; // packable repeated fields are packed by default
 end;
 
 { TUTF8Encoding }
 
-function TUTF8Encoding.GetBytes(Chars: PChar; CharCount: Integer; Bytes: PByte; ByteCount: Integer): Integer;
+function TUTF8Encoding.GetByteCount(AChars: PChar; ACharCount: Integer): Integer;
+begin
+  Result := inherited;
+end;
+
+function TUTF8Encoding.GetBytes(AChars: PChar; ACharCount: Integer; ABytes: PByte; AByteCount: Integer): Integer;
 begin
   Result := inherited;
 end;
 
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
+constructor TOutputSerializer.Create(AStream: TCustomMemoryStream; ALimitMemoryUsage: Boolean);
 begin
   inherited Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
-  FFieldRecursion := - 1;
+  FFieldRecursion   := - 1;
+  FLimitMemoryUsage := ALimitMemoryUsage;
 end;
 
 function TOutputSerializer.CurrentContext: PFieldContext;
@@ -131,11 +143,15 @@ begin
   if AAttribute is ProtobufAttribute then
     begin
       if FFieldRecursion < 0 then
-        raise EProtobufError.Create('Only fields can be marked with a Protobuf tag');
+        raise EProtobufError.Create('Only fields can be marked with a Protobuf attribute');
       with CurrentContext^ do
         begin
-          FFieldTag := (AAttribute as ProtobufAttribute).FieldTag;
-          FHasTag   := True;
+          if AAttribute is FieldTagAttribute then
+            FFieldTag   := (AAttribute as FieldTagAttribute).Value
+          else if AAttribute is RequiredAttribute then
+            FIsRequired := True
+          else if AAttribute is UnPackedAttribute then
+            FIsPacked   := False;
         end;
     end;
 end;
@@ -166,16 +182,29 @@ end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
-  raise EProtobufError.Create('Static arrays are not supported in Protobuf');
+  with CurrentContext^ do
+    begin
+      if not FIsArray then
+        begin
+          FIsArray     := True;
+          FArrayLength := ALength;
+        end
+      else if not FIsBytes then
+        raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
+    end;
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
   with CurrentContext^ do
     begin
-      if FIsArray then
+      if not FIsArray then
+        begin
+          FIsArray     := True;
+          FArrayLength := ALength;
+        end
+      else if not FIsBytes then
         raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
-      FIsArray := True;
     end;
 end;
 
@@ -223,18 +252,14 @@ end;
 
 procedure TOutputSerializer.EndStaticArray;
 begin
-  Assert(False); // should not be called
+  if CurrentContext.FIsPackedArray then
+    EndLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
-  with CurrentContext^ do
-    begin
-      Assert(FIsArray);
-      if FIsPacked then
-        EndLengthPrefixedWithUnknownSize;
-      FIsArray := False;
-    end;
+  if CurrentContext.FIsPackedArray then
+    EndLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
@@ -254,7 +279,7 @@ end;
 
 function TOutputSerializer.SkipField: Boolean;
 begin
-  Result := not CurrentContext.FHasTag;
+  Result := CurrentContext.FFieldTag = 0;
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
@@ -262,100 +287,119 @@ begin
   Result := False;
 end;
 
-function TOutputSerializer.ByteArrayAsAWhole: Boolean;
-begin
-  Result := True;
-end;
-
-procedure TOutputSerializer.DataType(const AName: string; AKind: TTypeKind);
+procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
   if FFieldRecursion >= 0 then
-    with CurrentContext^ do
-      begin
-        FTypeName := AName.ToUpper; // uppercase so we can easily test for equality
-        FIsSigned := FTypeName.StartsWith('SINT');
-        FIsFixed  := FTypeName.StartsWith('FIXED') or FTypeName.StartsWith('SFIXED');
-        FTypeKind := AKind;
-        if FIsArray then // we are dealing with the array element type
-          begin
-            FIsPacked := AKind in CPackedArrayElementTypeKinds;
-            if FIsPacked then
-              BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
-          end;
-      end
-  else if AKind <> tkRecord then
+    begin
+      InitializeTypeFlags(AType);
+      if CurrentContext.FIsPackedArray then
+        BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+    end
+  else if AType.TypeKind <> tkRecord then
     raise EProtobufError.Create('Only records can be serialized in Protobuf');
+end;
+
+procedure TOutputSerializer.InitializeTypeFlags(AType: TRttiType);
+begin
+  with CurrentContext^ do
+    begin
+      FIsSigned := (AType.Handle = TypeInfo(SInt32)) or (AType.Handle = TypeInfo(SInt64));
+      FIsFixed  :=
+        (AType.Handle = TypeInfo(Fixed32)) or (AType.Handle = TypeInfo(SFixed32)) or
+        (AType.Handle = TypeInfo(Fixed64)) or (AType.Handle = TypeInfo(SFixed64));
+      if FIsArray then
+        begin
+          FIsBytes       := AType.Handle = TypeInfo(TBytes);
+          FIsPackedArray := FIsPacked and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
-  raise EProtobufError.Create('Int8 is not supported in Protobuf');
+  with CurrentContext^ do
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.VarInt, FFieldTag);
+    end;
+  Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
-  raise EProtobufError.Create('Int16 is not supported in Protobuf');
+  with CurrentContext^ do
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.VarInt, FFieldTag);
+    end;
+  Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if FIsSigned then
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(SignedInt(AValue));
-      end
-    else if FIsFixed then
-      begin
-        if not FIsArray then
-          Pack(TWireType.Fixed32, FFieldTag);
-        Pack(FixedInt32(AValue));
-      end
-    else
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if FIsSigned then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(SignedInt(AValue));
+        end
+      else if FIsFixed then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.Fixed32, FFieldTag);
+          Pack(FixedInt32(AValue));
+        end
+      else
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(VarInt(AValue));
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if FIsSigned then
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(SignedInt(AValue));
-      end
-    else if FIsFixed then
-      begin
-        if not FIsArray then
-          Pack(TWireType.Fixed64, FFieldTag);
-        Pack(FixedInt64(AValue));
-      end
-    else
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if FIsSigned then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(SignedInt(AValue));
+        end
+      else if FIsFixed then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.Fixed64, FFieldTag);
+          Pack(FixedInt64(AValue));
+        end
+      else
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(VarInt(AValue));
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
     begin
-      if (not FIsArray) and (FTypeKind <> tkEnumeration) then
-        raise EProtobufError.Create('UInt8 is not supported in Protobuf');
-      if AValue = 0 then
+      if (AValue = 0) and not FIsRequired then
         Exit; // omit empty value from output
-      if not FIsArray then
+      if not FIsPackedArray then
         Pack(TWireType.VarInt, FFieldTag);
     end;
   Pack(VarInt(AValue));
@@ -365,11 +409,9 @@ procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
     begin
-      if FTypeKind <> tkEnumeration then
-        raise EProtobufError.Create('UInt16 is not supported in Protobuf');
-      if AValue = 0 then
+      if (AValue = 0) and not FIsRequired then
         Exit; // omit empty value from output
-      if not FIsArray then
+      if not FIsPackedArray then
         Pack(TWireType.VarInt, FFieldTag);
     end;
   Pack(VarInt(AValue));
@@ -377,59 +419,67 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if FIsFixed then
-      begin
-        if not FIsArray then
-          Pack(TWireType.Fixed32, FFieldTag);
-        Pack(FixedInt32(AValue));
-      end
-    else
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if FIsFixed then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.Fixed32, FFieldTag);
+          Pack(FixedInt32(AValue));
+        end
+      else
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(VarInt(AValue));
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if FIsFixed then
-      begin
-        if not FIsArray then
-          Pack(TWireType.Fixed64, FFieldTag);
-        Pack(FixedInt64(AValue));
-      end
-    else
-      begin
-        if not FIsArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if FIsFixed then
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.Fixed64, FFieldTag);
+          Pack(FixedInt64(AValue));
+        end
+      else
+        begin
+          if not FIsPackedArray then
+            Pack(TWireType.VarInt, FFieldTag);
+          Pack(VarInt(AValue));
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if not FIsArray then
-      Pack(TWireType.Fixed32, FFieldTag);
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.Fixed32, FFieldTag);
+    end;
   Pack(FixedInt32(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
-  if AValue = 0 then
-    Exit; // omit empty value from output
   with CurrentContext^ do
-    if not FIsArray then
-      Pack(TWireType.Fixed64, FFieldTag);
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.Fixed64, FFieldTag);
+    end;
   Pack(FixedInt64(AValue));
 end;
 
@@ -440,51 +490,83 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
-  raise EProtobufError.Create('Comp is not supported in Protobuf');
+  with CurrentContext^ do
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.Fixed64, FFieldTag);
+    end;
+  Pack(FixedInt64(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
-  raise EProtobufError.Create('Currency is not supported in Protobuf');
+  with CurrentContext^ do
+    begin
+      if (AValue = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      if not FIsPackedArray then
+        Pack(TWireType.Fixed64, FFieldTag);
+    end;
+  Pack(FixedInt64(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: ShortString);
 begin
-  raise EProtobufError.Create('ShortString is not supported in Protobuf');
+  Value(PAnsiChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: AnsiString);
 begin
-  raise EProtobufError.Create('AnsiString is not supported in Protobuf');
+  Value(PAnsiChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: WideString);
 begin
-  raise EProtobufError.Create('WideString is not supported in Protobuf');
+  Utf8Value(PChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UnicodeString);
-var
-  Count: Integer;
-  Start: PByte;
 begin
-  if AValue.IsEmpty then
-    Exit; // omit empty value from output
-  Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
-  Count := FUTF8Encoding.GetByteCount(AValue);
-  Pack(VarInt(Count));
-  Start := Require(Count);
-  Count := FUTF8Encoding.GetBytes(PChar(AValue), AValue.Length, Start, Count);
-  Skip(Count);
+  Utf8Value(PChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
-  if AByteCount = 0 then
-    Exit; // omit empty value from output
-  Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
+  with CurrentContext^ do
+    begin
+      if (AByteCount = 0) and not FIsRequired then
+        Exit; // omit empty value from output
+      Pack(TWireType.LengthPrefixed, FFieldTag);
+    end;
   Pack(VarInt(AByteCount));
   Write(AValue^, AByteCount);
+end;
+
+procedure TOutputSerializer.Utf8Value(AChars: PChar; ACharCount: Integer);
+var
+  ByteCount: Integer;
+  ByteStart: PByte;
+begin
+  if (ACharCount = 0) and not CurrentContext.FIsRequired then
+    Exit; // omit empty value from output
+  if FLimitMemoryUsage then
+    begin
+      Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
+      ByteCount := FUTF8Encoding.GetByteCount(AChars, ACharCount);
+      Pack(VarInt(ByteCount));
+    end
+  else
+    begin
+      ByteCount := FUTF8Encoding.GetMaxByteCount(ACharCount);
+      BeginLengthPrefixedWithUnknownSize;
+    end;
+  ByteStart := Require(ByteCount);
+  ByteCount := FUTF8Encoding.GetBytes(AChars, ACharCount, ByteStart, ByteCount);
+  Skip(ByteCount);
+  if not FLimitMemoryUsage then
+    EndLengthPrefixedWithUnknownSize;
 end;
 
 initialization

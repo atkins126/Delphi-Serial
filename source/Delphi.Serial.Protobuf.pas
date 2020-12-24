@@ -9,25 +9,27 @@ uses
 
 type
 
-  FieldTag = 1 .. $1FFFFFFF;
-  Float    = Single;
-  Bool     = Boolean;
-  Bytes    = TBytes;
-  SInt32   = type Int32;
-  SInt64   = type Int64;
-  Fixed32  = type UInt32;
-  Fixed64  = type UInt64;
-  SFixed32 = type Int32;
-  SFixed64 = type Int64;
+  FieldTag          = 1 .. $1FFFFFFF;
+  Float             = Single;
+  Bool              = Boolean;
+  Bytes             = TBytes;
+  SInt32            = type Int32;
+  SInt64            = type Int64;
+  Fixed32           = type UInt32;
+  Fixed64           = type UInt64;
+  SFixed32          = type Int32;
+  SFixed64          = type Int64;
 
-  ProtobufAttribute = class(TCustomAttribute)
+  ProtobufAttribute = class(TCustomAttribute);
+  RequiredAttribute = class(ProtobufAttribute);
+  UnPackedAttribute = class(ProtobufAttribute);
+
+  FieldTagAttribute = class(ProtobufAttribute)
     private
-      FFieldTag: FieldTag;
-
+      FValue: FieldTag;
     public
-      constructor Create(AFieldTag: FieldTag);
-
-      property FieldTag: FieldTag read FFieldTag;
+      constructor Create(AValue: FieldTag);
+      property Value: FieldTag read FValue;
   end;
 
   EProtobufError = class(Exception);
@@ -44,11 +46,11 @@ uses
   Delphi.Serial.Protobuf.InputSerializer,
   Delphi.Serial.Protobuf.OutputSerializer;
 
-{ ProtobufAttribute }
+{ FieldTagAttribute }
 
-constructor ProtobufAttribute.Create(AFieldTag: FieldTag);
+constructor FieldTagAttribute.Create(AValue: FieldTag);
 begin
-  FFieldTag := AFieldTag;
+  FValue := AValue;
 end;
 
 { TProtobuf }
