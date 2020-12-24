@@ -26,7 +26,7 @@ uses
   Delphi.Serial.ThriftTest in '..\test\Delphi.Serial.ThriftTest.pas',
   Delphi.Serial.SbeTest in '..\test\Delphi.Serial.SbeTest.pas',
   Delphi.Serial.CborTest in '..\test\Delphi.Serial.CborTest.pas',
-  Delphi.Serial.ProtobufUtilsTest in '..\test\Delphi.Serial.ProtobufUtilsTest.pas',
+  Delphi.Serial.ProtobufTypesTest in '..\test\Delphi.Serial.ProtobufTypesTest.pas',
   Delphi.Serial.Protobuf.SerializerTest in '..\test\Delphi.Serial.Protobuf.SerializerTest.pas',
   Delphi.Serial.Protobuf.OutputSerializerTest in '..\test\Delphi.Serial.Protobuf.OutputSerializerTest.pas',
   Schema.Addressbook.Proto in '..\test\generated\Schema.Addressbook.Proto.pas';

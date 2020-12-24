@@ -35,8 +35,8 @@ type
 
   TOutputSerializer = class(TSerializer, IRttiObserver)
     private const
-      CDefaultFieldRecursionLimit  = 256; // limit field recursion to 256 levels by default
-      CLengthPrefixReservedSize    = 2;   // space reserved for a VarInt with unknown size
+      CInitialFieldRecursionCount  = 16; // start with this number of field recursion levels
+      CLengthPrefixReservedSize    = 2;  // space reserved for a VarInt with unknown size
       CPackedArrayElementTypeKinds = [tkInteger, tkFloat, tkEnumeration, tkInt64];
 
     private
@@ -88,13 +88,13 @@ type
       procedure Attribute(const AAttribute: TCustomAttribute);
 
     public
-      constructor Create(AStream: TCustomMemoryStream; AFieldRecursionLimit: Integer = CDefaultFieldRecursionLimit);
+      constructor Create(AStream: TCustomMemoryStream);
   end;
 
 implementation
 
 uses
-  Delphi.Serial.ProtobufUtils;
+  Delphi.Serial.ProtobufTypes;
 
 { TFieldContext }
 
@@ -113,10 +113,10 @@ end;
 
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TCustomMemoryStream; AFieldRecursionLimit: Integer);
+constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
 begin
   inherited Create(AStream);
-  SetLength(FFieldContexts, AFieldRecursionLimit);
+  SetLength(FFieldContexts, CInitialFieldRecursionCount);
   FFieldRecursion := - 1;
 end;
 
@@ -142,9 +142,9 @@ end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
 begin
-  if FFieldRecursion = Length(FFieldContexts) - 1 then
-    raise EProtobufError.Create('Max field recursion was reached in Protobuf serializer');
   Inc(FFieldRecursion);
+  if FFieldRecursion = Length(FFieldContexts) then
+    SetLength(FFieldContexts, 2 * FFieldRecursion);
   CurrentContext.Initialize(AName);
 end;
 
@@ -311,7 +311,7 @@ begin
     else if FIsFixed then
       begin
         if not FIsArray then
-          Pack(TWireType._32bit, FFieldTag);
+          Pack(TWireType.Fixed32, FFieldTag);
         Pack(FixedInt32(AValue));
       end
     else
@@ -336,7 +336,7 @@ begin
     else if FIsFixed then
       begin
         if not FIsArray then
-          Pack(TWireType._64bit, FFieldTag);
+          Pack(TWireType.Fixed64, FFieldTag);
         Pack(FixedInt64(AValue));
       end
     else
@@ -383,7 +383,7 @@ begin
     if FIsFixed then
       begin
         if not FIsArray then
-          Pack(TWireType._32bit, FFieldTag);
+          Pack(TWireType.Fixed32, FFieldTag);
         Pack(FixedInt32(AValue));
       end
     else
@@ -402,7 +402,7 @@ begin
     if FIsFixed then
       begin
         if not FIsArray then
-          Pack(TWireType._64bit, FFieldTag);
+          Pack(TWireType.Fixed64, FFieldTag);
         Pack(FixedInt64(AValue));
       end
     else
@@ -419,7 +419,7 @@ begin
     Exit; // omit empty value from output
   with CurrentContext^ do
     if not FIsArray then
-      Pack(TWireType._32bit, FFieldTag);
+      Pack(TWireType.Fixed32, FFieldTag);
   Pack(FixedInt32(AValue));
 end;
 
@@ -429,7 +429,7 @@ begin
     Exit; // omit empty value from output
   with CurrentContext^ do
     if not FIsArray then
-      Pack(TWireType._64bit, FFieldTag);
+      Pack(TWireType.Fixed64, FFieldTag);
   Pack(FixedInt64(AValue));
 end;
 

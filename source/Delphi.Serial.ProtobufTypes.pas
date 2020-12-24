@@ -1,8 +1,12 @@
-unit Delphi.Serial.ProtobufUtils;
+unit Delphi.Serial.ProtobufTypes;
+
+{$SCOPEDENUMS ON}
 
 interface
 
 type
+
+  TWireType = (VarInt = 0, Fixed64 = 1, LengthPrefixed = 2, Fixed32 = 5);
 
   VarIntImpl = record
     private

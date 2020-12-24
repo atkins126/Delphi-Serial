@@ -113,7 +113,7 @@ type
 implementation
 
 uses
-  Delphi.Serial.ProtobufUtils;
+  Delphi.Serial.ProtobufTypes;
 
 { TSerializerTest }
 

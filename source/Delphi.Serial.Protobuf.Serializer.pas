@@ -1,17 +1,13 @@
 unit Delphi.Serial.Protobuf.Serializer;
 
-{$SCOPEDENUMS ON}
-
 interface
 
 uses
   Delphi.Serial.Protobuf,
-  Delphi.Serial.ProtobufUtils,
+  Delphi.Serial.ProtobufTypes,
   System.Classes;
 
 type
-
-  TWireType = (VarInt = 0, _64bit = 1, LengthPrefixed = 2, _32bit = 5);
 
   TSerializer = class(TInterfacedObject)
     private
