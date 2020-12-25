@@ -4,13 +4,13 @@ interface
 
 uses
   Delphi.Serial.Protobuf.Serializer,
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial,
   System.Classes,
   System.Rtti;
 
 type
 
-  TInputSerializer = class(TSerializer, IRttiObserver)
+  TInputSerializer = class(TSerializer, ISerializer)
     private
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -51,12 +51,18 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
+      function GetOption(const AName: string): Variant;
+      procedure SetOption(const AName: string; AValue: Variant);
+
     public
       constructor Create(AStream: TCustomMemoryStream);
       destructor Destroy; override;
   end;
 
 implementation
+
+uses
+  Delphi.Serial.Protobuf;
 
 { TInputSerializer }
 
@@ -132,6 +138,11 @@ begin
 
 end;
 
+function TInputSerializer.GetOption(const AName: string): Variant;
+begin
+  raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+end;
+
 function TInputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
 begin
   Result := False;
@@ -145,6 +156,11 @@ end;
 function TInputSerializer.SkipField: Boolean;
 begin
   Result := False;
+end;
+
+procedure TInputSerializer.SetOption(const AName: string; AValue: Variant);
+begin
+  raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
 end;
 
 function TInputSerializer.SkipAttributes: Boolean;

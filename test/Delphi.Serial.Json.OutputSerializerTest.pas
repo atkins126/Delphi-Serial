@@ -4,7 +4,7 @@ interface
 
 uses
   DUnitX.TestFramework,
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial,
   System.Classes;
 
 type
@@ -13,7 +13,7 @@ type
   TOutputSerializerTest = class
     private
       FStream    : TCustomMemoryStream;
-      FSerializer: IRttiObserver;
+      FSerializer: ISerializer;
 
     public
       [Setup]
@@ -35,12 +35,12 @@ uses
 type
   TAddressBookHelper = record helper for TAddressBook
     public
-      procedure Serialize(ASerializer: IRttiObserver); inline;
+      procedure Serialize(ASerializer: ISerializer); inline;
   end;
 
 { TAddressBookHelper }
 
-procedure TAddressBookHelper.Serialize(ASerializer: IRttiObserver);
+procedure TAddressBookHelper.Serialize(ASerializer: ISerializer);
 var
   Visitor: TRttiVisitor;
 begin
@@ -53,7 +53,9 @@ end;
 procedure TOutputSerializerTest.Setup;
 begin
   FStream     := TMemoryStream.Create;
-  FSerializer := TOutputSerializer.Create(FStream, 1);
+  FSerializer                   := TOutputSerializer.Create(FStream);
+  FSerializer['Indentation']    := 1;
+  FSerializer['UpperCaseEnums'] := True;
 end;
 
 procedure TOutputSerializerTest.TearDown;

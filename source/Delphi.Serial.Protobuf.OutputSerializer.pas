@@ -1,11 +1,13 @@
 unit Delphi.Serial.Protobuf.OutputSerializer;
 
+{$SCOPEDENUMS ON}
+
 interface
 
 uses
   Delphi.Serial.Protobuf.Serializer,
-  Delphi.Serial.RttiObserver,
   Delphi.Serial.Protobuf,
+  Delphi.Serial,
   System.Classes,
   System.SysUtils,
   System.Rtti;
@@ -36,7 +38,14 @@ type
       function GetBytes(AChars: PChar; ACharCount: Integer; ABytes: PByte; AByteCount: Integer): Integer; override;
   end;
 
-  TOutputSerializer = class(TSerializer, IRttiObserver)
+  TOutputOption = (LimitMemoryUsage);
+
+  TOutputOptionHelper = record helper for TOutputOption
+    public
+      class function From(const AName: string): TOutputOption; static;
+  end;
+
+  TOutputSerializer = class(TSerializer, ISerializer)
     private const
       CInitialFieldRecursionCount = 16; // start with this number of field recursion levels
       CLengthPrefixReservedSize   = 2;  // space reserved for a VarInt with unknown size
@@ -94,15 +103,18 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
+      function GetOption(const AName: string): Variant;
+      procedure SetOption(const AName: string; AValue: Variant);
+
     public
-      constructor Create(AStream: TCustomMemoryStream; ALimitMemoryUsage: Boolean = False);
+      constructor Create(AStream: TCustomMemoryStream);
   end;
 
 implementation
 
 uses
-  Delphi.Serial,
-  Delphi.Serial.ProtobufTypes;
+  Delphi.Serial.ProtobufTypes,
+  System.TypInfo;
 
 { TFieldContext }
 
@@ -125,14 +137,25 @@ begin
   Result := inherited;
 end;
 
+{ TOutputOptionHelper }
+
+class function TOutputOptionHelper.From(const AName: string): TOutputOption;
+var
+  Option: TOutputOption;
+begin
+  for Option := Low(TOutputOption) to High(TOutputOption) do
+    if GetEnumName(TypeInfo(TOutputOption), Ord(Option)) = AName then
+      Exit(Option);
+  raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+end;
+
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TCustomMemoryStream; ALimitMemoryUsage: Boolean);
+constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
 begin
   inherited Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
-  FFieldRecursion   := - 1;
-  FLimitMemoryUsage := ALimitMemoryUsage;
+  FFieldRecursion := - 1;
 end;
 
 function TOutputSerializer.CurrentContext: PFieldContext;
@@ -280,6 +303,14 @@ begin
   Assert(False); // should not be called
 end;
 
+function TOutputSerializer.GetOption(const AName: string): Variant;
+begin
+  case TOutputOption.From(AName) of
+    TOutputOption.LimitMemoryUsage:
+      Result := FLimitMemoryUsage;
+  end;
+end;
+
 function TOutputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
 begin
   Result := False;
@@ -293,6 +324,14 @@ end;
 function TOutputSerializer.SkipField: Boolean;
 begin
   Result := CurrentContext.FFieldTag = 0;
+end;
+
+procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
+begin
+  case TOutputOption.From(AName) of
+    TOutputOption.LimitMemoryUsage:
+      FLimitMemoryUsage := AValue;
+  end;
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;

@@ -7,7 +7,7 @@ uses
 
 type
 
-  FieldAttribute = class(TCustomAttribute);
+  FieldAttribute    = class(TCustomAttribute);
   RequiredAttribute = class(FieldAttribute);
 
   FieldNameAttribute = class(FieldAttribute)
@@ -18,7 +18,11 @@ type
       property Value: string read FValue;
   end;
 
-  ISerializer = IRttiObserver;
+  ISerializer = interface(IRttiObserver)
+    function GetOption(const AName: string): Variant;
+    procedure SetOption(const AName: string; AValue: Variant);
+    property Option[const AName: string]: Variant read GetOption write SetOption; default;
+  end;
 
   TSerial = class
     public

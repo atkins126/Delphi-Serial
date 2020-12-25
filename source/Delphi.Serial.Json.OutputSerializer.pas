@@ -1,9 +1,11 @@
 unit Delphi.Serial.Json.OutputSerializer;
 
+{$SCOPEDENUMS ON}
+
 interface
 
 uses
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial,
   System.Json.Writers,
   System.Classes,
   System.Rtti;
@@ -20,7 +22,14 @@ type
 
   PFieldContext = ^TFieldContext;
 
-  TOutputSerializer = class(TInterfacedObject, IRttiObserver)
+  TOutputOption = (Indentation, UpperCaseEnums);
+
+  TOutputOptionHelper = record helper for TOutputOption
+    public
+      class function From(const AName: string): TOutputOption; static;
+  end;
+
+  TOutputSerializer = class(TInterfacedObject, ISerializer)
     private const
       CInitialFieldRecursionCount = 16; // start with this number of field recursion levels
 
@@ -29,6 +38,7 @@ type
       FFieldContexts : TArray<TFieldContext>;
       FFieldRecursion: Integer;
       FLastStarted   : Integer;
+      FUpperCaseEnums: Boolean;
 
       function CurrentContext: PFieldContext; inline;
       procedure CheckStartValue;
@@ -72,29 +82,39 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
+      function GetOption(const AName: string): Variant;
+      procedure SetOption(const AName: string; AValue: Variant);
+
     public
-      constructor Create(AStream: TStream; AIndentation: Integer = - 1);
+      constructor Create(AStream: TStream);
       destructor Destroy; override;
   end;
 
 implementation
 
 uses
-  Delphi.Serial,
   Delphi.Serial.Json,
   System.Json.Types,
-  System.SysUtils;
+  System.SysUtils,
+  System.TypInfo;
+
+{ TOutputOptionHelper }
+
+class function TOutputOptionHelper.From(const AName: string): TOutputOption;
+var
+  Option: TOutputOption;
+begin
+  for Option := Low(TOutputOption) to High(TOutputOption) do
+    if GetEnumName(TypeInfo(TOutputOption), Ord(Option)) = AName then
+      Exit(Option);
+  raise EJsonError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+end;
 
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TStream; AIndentation: Integer);
+constructor TOutputSerializer.Create(AStream: TStream);
 begin
   FJsonWriter := TJsonTextWriter.Create(AStream);
-  if AIndentation >= 0 then
-    begin
-      FJsonWriter.Formatting  := TJsonFormatting.Indented;
-      FJsonWriter.Indentation := AIndentation;
-    end;
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
 end;
 
@@ -217,7 +237,39 @@ end;
 procedure TOutputSerializer.EnumName(const AName: string);
 begin
   CheckStartValue;
-  FJsonWriter.WriteValue(AName);
+  if FUpperCaseEnums then
+    FJsonWriter.WriteValue(AName.ToUpper)
+  else
+    FJsonWriter.WriteValue(AName);
+end;
+
+function TOutputSerializer.GetOption(const AName: string): Variant;
+begin
+  case TOutputOption.From(AName) of
+    TOutputOption.Indentation:
+      if FJsonWriter.Formatting = TJsonFormatting.Indented then
+        Result := FJsonWriter.Indentation
+      else
+        Result := - 1;
+    TOutputOption.UpperCaseEnums:
+      Result   := FUpperCaseEnums
+  end;
+end;
+
+procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
+begin
+  case TOutputOption.From(AName) of
+    TOutputOption.Indentation:
+      if AValue >= 0 then
+        begin
+          FJsonWriter.Formatting  := TJsonFormatting.Indented;
+          FJsonWriter.Indentation := AValue;
+        end
+      else
+        FJsonWriter.Formatting := TJsonFormatting.None;
+    TOutputOption.UpperCaseEnums:
+      FUpperCaseEnums          := AValue;
+  end;
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;

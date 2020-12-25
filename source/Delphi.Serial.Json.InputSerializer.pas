@@ -3,13 +3,13 @@ unit Delphi.Serial.Json.InputSerializer;
 interface
 
 uses
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial,
   System.Classes,
   System.Rtti;
 
 type
 
-  TInputSerializer = class(TInterfacedObject, IRttiObserver)
+  TInputSerializer = class(TInterfacedObject, ISerializer)
     private
       FStream: TStream;
 
@@ -52,12 +52,18 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
+      function GetOption(const AName: string): Variant;
+      procedure SetOption(const AName: string; AValue: Variant);
+
     public
       constructor Create(AStream: TStream);
       destructor Destroy; override;
   end;
 
 implementation
+
+uses
+  Delphi.Serial.Json;
 
 { TInputSerializer }
 
@@ -135,6 +141,16 @@ end;
 procedure TInputSerializer.EnumName(const AName: string);
 begin
 
+end;
+
+function TInputSerializer.GetOption(const AName: string): Variant;
+begin
+  raise EJsonError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+end;
+
+procedure TInputSerializer.SetOption(const AName: string; AValue: Variant);
+begin
+  raise EJsonError.CreateFmt('The serializer has no option with this name: %s', [AName]);
 end;
 
 function TInputSerializer.SkipAttributes: Boolean;
