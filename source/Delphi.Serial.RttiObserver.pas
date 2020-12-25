@@ -29,6 +29,8 @@ type
     procedure Value(var AValue: UnicodeString); overload;
     procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
+    procedure BeginAll;
+    procedure EndAll;
     procedure BeginRecord;
     procedure EndRecord;
     procedure BeginField(const AName: string);

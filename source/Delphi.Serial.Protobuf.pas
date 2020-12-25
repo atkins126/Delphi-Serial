@@ -20,11 +20,9 @@ type
   SFixed32          = type Int32;
   SFixed64          = type Int64;
 
-  ProtobufAttribute = class(TCustomAttribute);
-  RequiredAttribute = class(ProtobufAttribute);
-  UnPackedAttribute = class(ProtobufAttribute);
+  UnPackedAttribute = class(FieldAttribute);
 
-  FieldTagAttribute = class(ProtobufAttribute)
+  FieldTagAttribute = class(FieldAttribute)
     private
       FValue: FieldTag;
     public

@@ -51,7 +51,12 @@ end;
 
 procedure TRttiVisitor.Visit<T>(var AValue: T);
 begin
-  VisitType(Addr(AValue), FContext.GetType(TypeInfo(T)));
+  FObserver.BeginAll;
+  try
+    VisitType(Addr(AValue), FContext.GetType(TypeInfo(T)));
+  finally
+    FObserver.EndAll;
+  end;
 end;
 
 procedure TRttiVisitor.VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer);

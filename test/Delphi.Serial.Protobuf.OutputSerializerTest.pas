@@ -15,8 +15,6 @@ type
       FStream    : TCustomMemoryStream;
       FSerializer: IRttiObserver;
 
-      procedure SaveToFile(const AFileName: string);
-
     public
       [Setup]
       procedure Setup;
@@ -52,13 +50,6 @@ end;
 
 { TOutputSerializerTest }
 
-procedure TOutputSerializerTest.SaveToFile(const AFileName: string);
-begin
-  FStream.Size     := FStream.Position;
-  FStream.Position := 0;
-  FStream.SaveToFile(AFileName);
-end;
-
 procedure TOutputSerializerTest.Setup;
 begin
   FStream     := TMemoryStream.Create;
@@ -72,14 +63,15 @@ end;
 
 procedure TOutputSerializerTest.TestSerializeAddressBook;
 const
-  CPerson: TPerson = (FName: 'abc'; FId: 1; FLastUpdated: (FSeconds: -1));
+  CPerson: TPerson = (FName: 'abc'; FId: 1; FLastUpdated: (FSeconds: - 1));
 var
   Addressbook: TAddressBook;
 begin
   Addressbook.FPeople := Addressbook.FPeople + [CPerson];
   Addressbook.Serialize(FSerializer);
   Assert.AreEqual<Int64>(22, FStream.Position);
-//  SaveToFile('delphi_addressbook.data');
+  FStream.Position := 0;
+//  FStream.SaveToFile('addressbook.data');
 end;
 
 initialization

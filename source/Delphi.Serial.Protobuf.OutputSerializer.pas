@@ -74,6 +74,8 @@ type
       procedure Value(var AValue: UnicodeString); overload;
       procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
+      procedure BeginAll;
+      procedure EndAll;
       procedure BeginRecord;
       procedure EndRecord;
       procedure BeginField(const AName: string);
@@ -99,6 +101,7 @@ type
 implementation
 
 uses
+  Delphi.Serial,
   Delphi.Serial.ProtobufTypes;
 
 { TFieldContext }
@@ -140,10 +143,10 @@ end;
 
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
-  if AAttribute is ProtobufAttribute then
+  if AAttribute is FieldAttribute then
     begin
       if FFieldRecursion < 0 then
-        raise EProtobufError.Create('Only fields can be marked with a Protobuf attribute');
+        raise EProtobufError.CreateFmt('Only fields can be marked with this attribute: %s', [AAttribute.ClassName]);
       with CurrentContext^ do
         begin
           if AAttribute is FieldTagAttribute then
@@ -192,6 +195,11 @@ begin
       else if not FIsBytes then
         raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
     end;
+end;
+
+procedure TOutputSerializer.BeginAll;
+begin
+  // ignore
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
@@ -256,6 +264,11 @@ begin
     EndLengthPrefixedWithUnknownSize;
 end;
 
+procedure TOutputSerializer.EndAll;
+begin
+  Truncate;
+end;
+
 procedure TOutputSerializer.EndDynamicArray;
 begin
   if CurrentContext.FIsPackedArray then
@@ -318,168 +331,158 @@ end;
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.VarInt, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.VarInt, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if FIsSigned then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(SignedInt(AValue));
-        end
-      else if FIsFixed then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.Fixed32, FFieldTag);
-          Pack(FixedInt32(AValue));
-        end
-      else
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
-        end;
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if FIsSigned then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(SignedInt(AValue));
+      end
+    else if FIsFixed then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.Fixed32, FFieldTag);
+        Pack(FixedInt32(AValue));
+      end
+    else
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if FIsSigned then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(SignedInt(AValue));
-        end
-      else if FIsFixed then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.Fixed64, FFieldTag);
-          Pack(FixedInt64(AValue));
-        end
-      else
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
-        end;
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if FIsSigned then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(SignedInt(AValue));
+      end
+    else if FIsFixed then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.Fixed64, FFieldTag);
+        Pack(FixedInt64(AValue));
+      end
+    else
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.VarInt, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.VarInt, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.VarInt, FFieldTag);
   Pack(VarInt(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if FIsFixed then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.Fixed32, FFieldTag);
-          Pack(FixedInt32(AValue));
-        end
-      else
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
-        end;
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if FIsFixed then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.Fixed32, FFieldTag);
+        Pack(FixedInt32(AValue));
+      end
+    else
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if FIsFixed then
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.Fixed64, FFieldTag);
-          Pack(FixedInt64(AValue));
-        end
-      else
-        begin
-          if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
-        end;
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if FIsFixed then
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.Fixed64, FFieldTag);
+        Pack(FixedInt64(AValue));
+      end
+    else
+      begin
+        if not FIsPackedArray then
+          Pack(TWireType.VarInt, FFieldTag);
+        Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.Fixed32, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.Fixed32, FFieldTag);
   Pack(FixedInt32(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.Fixed64, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.Fixed64, FFieldTag);
   Pack(FixedInt64(AValue));
 end;
 
@@ -491,24 +494,22 @@ end;
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.Fixed64, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.Fixed64, FFieldTag);
   Pack(FixedInt64(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      if not FIsPackedArray then
-        Pack(TWireType.Fixed64, FFieldTag);
-    end;
+    if (AValue = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  with CurrentContext^ do
+    if not FIsPackedArray then
+      Pack(TWireType.Fixed64, FFieldTag);
   Pack(FixedInt64(AValue));
 end;
 
@@ -535,11 +536,9 @@ end;
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
   with CurrentContext^ do
-    begin
-      if (AByteCount = 0) and not FIsRequired then
-        Exit; // omit empty value from output
-      Pack(TWireType.LengthPrefixed, FFieldTag);
-    end;
+    if (AByteCount = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
+  Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
   Pack(VarInt(AByteCount));
   Write(AValue^, AByteCount);
 end;
@@ -549,8 +548,9 @@ var
   ByteCount: Integer;
   ByteStart: PByte;
 begin
-  if (ACharCount = 0) and not CurrentContext.FIsRequired then
-    Exit; // omit empty value from output
+  with CurrentContext^ do
+    if (ACharCount = 0) and (not FIsArray) and not FIsRequired then
+      Exit;
   if FLimitMemoryUsage then
     begin
       Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);

@@ -31,6 +31,8 @@ type
       procedure Value(var AValue: UnicodeString); overload;
       procedure Value(AValue: Pointer; AByteCount: Integer); overload;
 
+      procedure BeginAll;
+      procedure EndAll;
       procedure BeginRecord;
       procedure EndRecord;
       procedure BeginField(const AName: string);
@@ -90,6 +92,11 @@ begin
 
 end;
 
+procedure TInputSerializer.BeginAll;
+begin
+
+end;
+
 procedure TInputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
 
@@ -106,6 +113,11 @@ begin
 end;
 
 procedure TInputSerializer.EndRecord;
+begin
+
+end;
+
+procedure TInputSerializer.EndAll;
 begin
 
 end;

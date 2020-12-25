@@ -7,6 +7,9 @@ uses
 
 type
 
+  FieldAttribute = class(TCustomAttribute);
+  RequiredAttribute = class(FieldAttribute);
+
   ISerializer = IRttiObserver;
 
   TSerial = class

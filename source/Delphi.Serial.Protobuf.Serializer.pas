@@ -15,6 +15,7 @@ type
 
     protected
       procedure Move(ACount, ADisplacement: Integer); inline;
+      procedure Truncate; inline;
       function Require(ACount: Integer): Pointer;
       function Skip(ACount: Integer): Int64; inline;
       function Read(var AValue; ACount: Integer): Integer; inline;
@@ -68,6 +69,11 @@ end;
 function TSerializer.Skip(ACount: Integer): Int64;
 begin
   Result := FStream.Seek(ACount, TSeekOrigin.soCurrent);
+end;
+
+procedure TSerializer.Truncate;
+begin
+  FStream.Size := FStream.Position;
 end;
 
 function TSerializer.Read(var AValue; ACount: Integer): Integer;
