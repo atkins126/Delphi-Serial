@@ -5,7 +5,7 @@ unit Delphi.Serial.Protobuf.OutputSerializer;
 interface
 
 uses
-  Delphi.Serial.Protobuf.Serializer,
+  Delphi.Serial.Protobuf.Writer,
   Delphi.Serial.Protobuf,
   Delphi.Serial,
   System.Classes,
@@ -45,13 +45,16 @@ type
       class function From(const AName: string): TOutputOption; static;
   end;
 
-  TOutputSerializer = class(TSerializer, ISerializer)
+  TProtobufWriter = Delphi.Serial.Protobuf.Writer.TWriter;
+
+  TOutputSerializer = class(TInterfacedObject, ISerializer)
     private const
       CInitialFieldRecursionCount = 16; // start with this number of field recursion levels
       CLengthPrefixReservedSize   = 2;  // space reserved for a VarInt with unknown size
       CPackableElementTypeKinds   = [tkInteger, tkFloat, tkEnumeration, tkInt64];
 
     private
+      FWriter                : TProtobufWriter;
       FFieldContexts         : TArray<TFieldContext>;
       FFieldRecursion        : Integer;
       FLimitMemoryUsage      : Boolean;
@@ -108,6 +111,7 @@ type
 
     public
       constructor Create(AStream: TCustomMemoryStream);
+      destructor Destroy; override;
   end;
 
 implementation
@@ -153,9 +157,15 @@ end;
 
 constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
 begin
-  inherited Create(AStream);
+  FWriter := TProtobufWriter.Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
   FFieldRecursion := - 1;
+end;
+
+destructor TOutputSerializer.Destroy;
+begin
+  FWriter.Free;
+  inherited;
 end;
 
 function TOutputSerializer.CurrentContext: PFieldContext;
@@ -200,9 +210,9 @@ procedure TOutputSerializer.BeginLengthPrefixedWithUnknownSize;
 begin
   with CurrentContext^ do
     begin
-      FBeforePos := Skip(0);
-      Pack(TWireType.LengthPrefixed, FFieldTag);
-      FStartPos  := Skip(CLengthPrefixReservedSize);
+      FBeforePos := FWriter.Skip(0);
+      FWriter.Pack(TWireType.LengthPrefixed, FFieldTag);
+      FStartPos  := FWriter.Skip(CLengthPrefixReservedSize);
     end;
 end;
 
@@ -257,12 +267,12 @@ var
 begin
   with CurrentContext^ do
     begin
-      WrittenCount := Skip(0) - FStartPos;
+      WrittenCount := FWriter.Skip(0) - FStartPos;
       Assert(WrittenCount >= 0);
       if WrittenCount > 0 then
         PackLengthPrefix(WrittenCount)
       else
-        Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
+        FWriter.Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
     end;
 end;
 
@@ -273,12 +283,12 @@ var
 begin
   LengthPrefix := VarInt(WrittenCount);
   PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
-  Skip(- WrittenCount);
+  FWriter.Skip(- WrittenCount);
   if PrefixDiff <> 0 then
-    Move(WrittenCount, PrefixDiff); // move memory by a few bytes to fit the length prefix
-  Skip(- CLengthPrefixReservedSize);
-  Pack(LengthPrefix);
-  Skip(WrittenCount);
+    FWriter.Move(WrittenCount, PrefixDiff); // move memory by a few bytes to fit the length prefix
+  FWriter.Skip(- CLengthPrefixReservedSize);
+  FWriter.Pack(LengthPrefix);
+  FWriter.Skip(WrittenCount);
 end;
 
 procedure TOutputSerializer.EndStaticArray;
@@ -289,7 +299,7 @@ end;
 
 procedure TOutputSerializer.EndAll;
 begin
-  Truncate;
+  FWriter.Truncate;
 end;
 
 procedure TOutputSerializer.EndDynamicArray;
@@ -373,8 +383,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
       end;
 end;
 
@@ -384,8 +394,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
       end;
 end;
 
@@ -396,20 +406,20 @@ begin
       if FIsSigned then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(SignedInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(SignedInt(AValue));
         end
       else if FIsFixed then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.Fixed32, FFieldTag);
-          Pack(FixedInt32(AValue));
+            FWriter.Pack(TWireType.Fixed32, FFieldTag);
+          FWriter.Pack(FixedInt32(AValue));
         end
       else
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
         end;
 end;
 
@@ -420,20 +430,20 @@ begin
       if FIsSigned then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(SignedInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(SignedInt(AValue));
         end
       else if FIsFixed then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.Fixed64, FFieldTag);
-          Pack(FixedInt64(AValue));
+            FWriter.Pack(TWireType.Fixed64, FFieldTag);
+          FWriter.Pack(FixedInt64(AValue));
         end
       else
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
         end;
 end;
 
@@ -443,8 +453,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
       end;
 end;
 
@@ -454,8 +464,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.VarInt, FFieldTag);
-        Pack(VarInt(AValue));
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
       end;
 end;
 
@@ -466,14 +476,14 @@ begin
       if FIsFixed then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.Fixed32, FFieldTag);
-          Pack(FixedInt32(AValue));
+            FWriter.Pack(TWireType.Fixed32, FFieldTag);
+          FWriter.Pack(FixedInt32(AValue));
         end
       else
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
         end;
 end;
 
@@ -484,14 +494,14 @@ begin
       if FIsFixed then
         begin
           if not FIsPackedArray then
-            Pack(TWireType.Fixed64, FFieldTag);
-          Pack(FixedInt64(AValue));
+            FWriter.Pack(TWireType.Fixed64, FFieldTag);
+          FWriter.Pack(FixedInt64(AValue));
         end
       else
         begin
           if not FIsPackedArray then
-            Pack(TWireType.VarInt, FFieldTag);
-          Pack(VarInt(AValue));
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
         end;
 end;
 
@@ -501,8 +511,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.Fixed32, FFieldTag);
-        Pack(FixedInt32(AValue));
+          FWriter.Pack(TWireType.Fixed32, FFieldTag);
+        FWriter.Pack(FixedInt32(AValue));
       end;
 end;
 
@@ -512,8 +522,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.Fixed64, FFieldTag);
-        Pack(FixedInt64(AValue));
+          FWriter.Pack(TWireType.Fixed64, FFieldTag);
+        FWriter.Pack(FixedInt64(AValue));
       end;
 end;
 
@@ -528,8 +538,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.Fixed64, FFieldTag);
-        Pack(FixedInt64(AValue));
+          FWriter.Pack(TWireType.Fixed64, FFieldTag);
+        FWriter.Pack(FixedInt64(AValue));
       end;
 end;
 
@@ -539,8 +549,8 @@ begin
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
-          Pack(TWireType.Fixed64, FFieldTag);
-        Pack(FixedInt64(AValue));
+          FWriter.Pack(TWireType.Fixed64, FFieldTag);
+        FWriter.Pack(FixedInt64(AValue));
       end;
 end;
 
@@ -569,9 +579,9 @@ begin
   with CurrentContext^ do
     if (AByteCount <> 0) or FIsArray or FIsRequired then
       begin
-        Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
-        Pack(VarInt(AByteCount));
-        Write(AValue^, AByteCount);
+        FWriter.Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
+        FWriter.Pack(VarInt(AByteCount));
+        FWriter.Write(AValue^, AByteCount);
       end;
 end;
 
@@ -585,18 +595,18 @@ begin
       begin
         if FLimitMemoryUsage then
           begin
-            Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
+            FWriter.Pack(TWireType.LengthPrefixed, CurrentContext.FFieldTag);
             ByteCount := FUTF8Encoding.GetByteCount(AChars, ACharCount);
-            Pack(VarInt(ByteCount));
+            FWriter.Pack(VarInt(ByteCount));
           end
         else
           begin
             ByteCount := FUTF8Encoding.GetMaxByteCount(ACharCount);
             BeginLengthPrefixedWithUnknownSize;
           end;
-        ByteStart := Require(ByteCount);
+        ByteStart := FWriter.Require(ByteCount);
         ByteCount := FUTF8Encoding.GetBytes(AChars, ACharCount, ByteStart, ByteCount);
-        Skip(ByteCount);
+        FWriter.Skip(ByteCount);
         if not FLimitMemoryUsage then
           EndLengthPrefixedWithUnknownSize;
       end;

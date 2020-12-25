@@ -106,7 +106,7 @@
         <DCCReference Include="..\test\Delphi.Serial.SbeTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.CborTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.ProtobufTypesTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.Protobuf.SerializerTest.pas"/>
+        <DCCReference Include="..\test\Delphi.Serial.Protobuf.ReaderWriterTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.Protobuf.OutputSerializerTest.pas"/>
         <DCCReference Include="..\test\generated\Schema.Addressbook.Proto.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.Json.OutputSerializerTest.pas"/>

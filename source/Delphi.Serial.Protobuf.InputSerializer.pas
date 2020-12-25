@@ -3,15 +3,19 @@ unit Delphi.Serial.Protobuf.InputSerializer;
 interface
 
 uses
-  Delphi.Serial.Protobuf.Serializer,
+  Delphi.Serial.Protobuf.Reader,
   Delphi.Serial,
   System.Classes,
   System.Rtti;
 
 type
 
-  TInputSerializer = class(TSerializer, ISerializer)
+  TProtobufReader = Delphi.Serial.Protobuf.Reader.TReader;
+
+  TInputSerializer = class(TInterfacedObject, ISerializer)
     private
+      FReader: TProtobufReader;
+
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
       procedure Value(var AValue: Int32); overload;
@@ -68,13 +72,12 @@ uses
 
 constructor TInputSerializer.Create(AStream: TCustomMemoryStream);
 begin
-  inherited;
-
+  FReader := TProtobufReader.Create(AStream);
 end;
 
 destructor TInputSerializer.Destroy;
 begin
-
+  FReader.Free;
   inherited;
 end;
 

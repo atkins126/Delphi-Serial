@@ -1,22 +1,25 @@
-unit Delphi.Serial.Protobuf.SerializerTest;
+unit Delphi.Serial.Protobuf.ReaderWriterTest;
 
 interface
 
 uses
   DUnitX.TestFramework,
-  Delphi.Serial.Protobuf.Serializer,
+  Delphi.Serial.Protobuf.Reader,
+  Delphi.Serial.Protobuf.Writer,
   Delphi.Serial.Protobuf,
   System.Classes;
 
 type
 
-  TSerializer = class(Delphi.Serial.Protobuf.Serializer.TSerializer);
+  TProtobufReader = Delphi.Serial.Protobuf.Reader.TReader;
+  TProtobufWriter = Delphi.Serial.Protobuf.Writer.TWriter;
 
   [TestFixture]
   TSerializerTest = class
     private
-      FStream    : TCustomMemoryStream;
-      FSerializer: TSerializer;
+      FStream: TCustomMemoryStream;
+      FReader: TProtobufReader;
+      FWriter: TProtobufWriter;
 
     public
       [Setup]
@@ -119,13 +122,15 @@ uses
 
 procedure TSerializerTest.Setup;
 begin
-  FStream     := TMemoryStream.Create;
-  FSerializer := TSerializer.Create(FStream);
+  FStream := TMemoryStream.Create;
+  FReader := TProtobufReader.Create(FStream);
+  FWriter := TProtobufWriter.Create(FStream);
 end;
 
 procedure TSerializerTest.TearDown;
 begin
-  FSerializer.Free;
+  FReader.Free;
+  FWriter.Free;
   FStream.Free;
 end;
 
@@ -135,17 +140,17 @@ var
   WrittenCount: Integer;
   Target      : VarInt;
 begin
-  FSerializer.Pack(VarInt(0));
+  FWriter.Pack(VarInt(0));
   StreamPos := FStream.Position;
-  FSerializer.Pack(VarInt(High(Integer)));
-  FSerializer.Pack(VarInt(1));
+  FWriter.Pack(VarInt(High(Integer)));
+  FWriter.Pack(VarInt(1));
   WrittenCount := FStream.Position - StreamPos;
-  FSerializer.Skip(- WrittenCount);
-  FSerializer.Move(WrittenCount, ACount);
-  FSerializer.Skip(ACount);
-  FSerializer.Parse(Target);
+  FWriter.Skip(- WrittenCount);
+  FWriter.Move(WrittenCount, ACount);
+  FWriter.Skip(ACount);
+  FReader.Parse(Target);
   Assert.AreEqual(High(Integer), UInt32(Target));
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(1, UInt32(Target));
 end;
 
@@ -153,9 +158,9 @@ procedure TSerializerTest.TestPackAndParseSFixed32(AValue: SFixed32);
 var
   Target: FixedInt32;
 begin
-  FSerializer.Pack(FixedInt32(AValue));
+  FWriter.Pack(FixedInt32(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, SFixed32(Target));
 end;
 
@@ -163,9 +168,9 @@ procedure TSerializerTest.TestPackAndParseSFixed64(AValue: SFixed64);
 var
   Target: FixedInt64;
 begin
-  FSerializer.Pack(FixedInt64(AValue));
+  FWriter.Pack(FixedInt64(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual<SFixed64>(AValue, SFixed64(Target));
 end;
 
@@ -173,9 +178,9 @@ procedure TSerializerTest.TestPackAndParseFixed32(AValue: Fixed32);
 var
   Target: FixedInt32;
 begin
-  FSerializer.Pack(FixedInt32(AValue));
+  FWriter.Pack(FixedInt32(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, Fixed32(Target));
 end;
 
@@ -183,9 +188,9 @@ procedure TSerializerTest.TestPackAndParseFixed64(AValue: Fixed64);
 var
   Target: FixedInt64;
 begin
-  FSerializer.Pack(FixedInt64(AValue));
+  FWriter.Pack(FixedInt64(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual<Fixed64>(AValue, Fixed64(Target));
 end;
 
@@ -193,9 +198,9 @@ procedure TSerializerTest.TestPackAndParseInt32(AValue: Int32);
 var
   Target: VarInt;
 begin
-  FSerializer.Pack(VarInt(AValue));
+  FWriter.Pack(VarInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, Int32(Target));
 end;
 
@@ -203,9 +208,9 @@ procedure TSerializerTest.TestPackAndParseInt64(AValue: Int64);
 var
   Target: VarInt;
 begin
-  FSerializer.Pack(VarInt(AValue));
+  FWriter.Pack(VarInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, Int64(Target));
 end;
 
@@ -213,9 +218,9 @@ procedure TSerializerTest.TestPackAndParseSInt32(AValue: SInt32);
 var
   Target: SignedInt;
 begin
-  FSerializer.Pack(SignedInt(AValue));
+  FWriter.Pack(SignedInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, SInt32(Target));
 end;
 
@@ -223,9 +228,9 @@ procedure TSerializerTest.TestPackAndParseSInt64(AValue: SInt64);
 var
   Target: SignedInt;
 begin
-  FSerializer.Pack(SignedInt(AValue));
+  FWriter.Pack(SignedInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual<SInt64>(AValue, SInt64(Target));
 end;
 
@@ -233,9 +238,9 @@ procedure TSerializerTest.TestPackAndParseUInt32(AValue: UInt32);
 var
   Target: VarInt;
 begin
-  FSerializer.Pack(VarInt(AValue));
+  FWriter.Pack(VarInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, UInt32(Target));
 end;
 
@@ -243,9 +248,9 @@ procedure TSerializerTest.TestPackAndParseUInt64(AValue: UInt64);
 var
   Target: VarInt;
 begin
-  FSerializer.Pack(VarInt(AValue));
+  FWriter.Pack(VarInt(AValue));
   FStream.Position := 0;
-  FSerializer.Parse(Target);
+  FReader.Parse(Target);
   Assert.AreEqual(AValue, UInt64(Target));
 end;
 
@@ -254,9 +259,9 @@ var
   TargetWireType: TWireType;
   TargetFieldTag: FieldTag;
 begin
-  FSerializer.Pack(TWireType(AWireType), AFieldTag);
+  FWriter.Pack(TWireType(AWireType), AFieldTag);
   FStream.Position := 0;
-  FSerializer.Parse(TargetWireType, TargetFieldTag);
+  FReader.Parse(TargetWireType, TargetFieldTag);
   Assert.AreEqual(TWireType(AWireType), TargetWireType);
   Assert.AreEqual(AFieldTag, TargetFieldTag);
 end;
