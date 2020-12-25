@@ -1,6 +1,7 @@
 #ifndef DELPHIUTILS_H
 #define DELPHIUTILS_H
 
+#include <algorithm>
 #include <string>
 
 std::string GetCamelCase(const std::string &name);
@@ -23,6 +24,24 @@ inline std::string GetFieldName(const std::string &name)
 inline std::string GetArrayType(const std::string &name)
 {
     return "TArray<" + name + ">";
+}
+
+inline std::string ToLower(const std::string &name)
+{
+    auto result = name;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
+    return result;
+}
+
+inline std::string ToUpper(const std::string &name)
+{
+    auto result = name;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
+        return std::toupper(c);
+    });
+    return result;
 }
 
 #endif // DELPHIUTILS_H

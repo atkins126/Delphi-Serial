@@ -5,8 +5,6 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
-#include <list>
-
 using namespace google::protobuf;
 
 class DelphiUnitGenerator
@@ -29,14 +27,21 @@ private:
         bool packed;
         int tag;
     };
+    struct Enumerator
+    {
+        std::string name;
+        int number;
+        int isLast;
+    };
 
     void Print(const FileDescriptor *desc);
     void Print(const Descriptor *desc);
     void Print(const EnumDescriptor *desc);
-    void Print(const EnumValueDescriptor *desc);
+    void Print(const Enumerator &enumerator);
     void Print(const Field &field);
 
-    std::list<Field> GetFields(const Descriptor *desc);
+    std::vector<Enumerator> GetEnumerators(const EnumDescriptor *desc);
+    std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
 
     std::map<std::string, std::string> _parameters;

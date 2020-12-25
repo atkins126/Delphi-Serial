@@ -64,32 +64,29 @@ void DelphiUnitGenerator::Print(const EnumDescriptor *desc)
         return;
     _types.insert(enumname);
 
+    const auto enumerators = GetEnumerators(desc);
+
     _variables["enumname"] = enumname;
     _printer.Print(_variables, "$enumname$ = (\n");
     _printer.Indent();
     int nextNumber = 0;
-    for (int i = 0; i < desc->value_count(); ++i) {
-        const auto number = desc->value(i)->number();
-        for (int k = nextNumber; k < number; ++k) {
+    for (auto &enumerator : enumerators) {
+        for (int k = nextNumber; k < enumerator.number; ++k) {
             _variables["valuenumber"] = std::to_string(k);
             _printer.Print(_variables, "_unused$valuenumber$ = $valuenumber$,\n");
         }
-        Print(desc->value(i));
-        nextNumber = number + 1;
+        Print(enumerator);
+        nextNumber = enumerator.number + 1;
     }
     _printer.Outdent();
     _printer.Print(_variables, ");\n\n");
 }
 
-void DelphiUnitGenerator::Print(const EnumValueDescriptor *desc)
+void DelphiUnitGenerator::Print(const Enumerator &enumerator)
 {
-    auto name = desc->name();
-    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
-        return std::tolower(c);
-    });
-    _variables["valuename"] = GetCamelCase(name);
-    _variables["valuenumber"] = std::to_string(desc->number());
-    if (desc->index() == desc->type()->value_count() - 1) {
+    _variables["valuename"] = GetCamelCase(ToLower(enumerator.name));
+    _variables["valuenumber"] = std::to_string(enumerator.number);
+    if (enumerator.isLast) {
         _printer.Print(_variables, "$valuename$ = $valuenumber$\n");
     } else {
         _printer.Print(_variables, "$valuename$ = $valuenumber$,\n");
@@ -112,9 +109,26 @@ void DelphiUnitGenerator::Print(const Field &field)
     _printer.Print(_variables, "[FieldTag($fieldtag$)$fieldoptions$] $fieldname$: $fieldtype$;\n");
 }
 
-std::list<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Descriptor *desc)
+std::vector<DelphiUnitGenerator::Enumerator> DelphiUnitGenerator::GetEnumerators(
+    const EnumDescriptor *desc)
 {
-    std::list<Field> result;
+    std::vector<Enumerator> result;
+    result.reserve(desc->value_count());
+    for (int i = 0; i < desc->value_count(); ++i) {
+        const auto value = desc->value(i);
+        result.push_back({value->name(), value->number(), false});
+    }
+    std::sort(result.begin(), result.end(), [](const Enumerator &lhs, const Enumerator &rhs) {
+        return lhs.number < rhs.number;
+    });
+    result.back().isLast = true;
+    return result;
+}
+
+std::vector<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Descriptor *desc)
+{
+    std::vector<Field> result;
+    result.reserve(desc->field_count());
     for (int i = 0; i < desc->field_count(); ++i) {
         const auto field = desc->field(i);
         result.push_back({GetFieldName(field->name()),
