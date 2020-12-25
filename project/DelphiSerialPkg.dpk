@@ -48,6 +48,8 @@ contains
   Delphi.Serial.Protobuf.Serializer in '..\source\Delphi.Serial.Protobuf.Serializer.pas',
   Delphi.Serial.Protobuf.InputSerializer in '..\source\Delphi.Serial.Protobuf.InputSerializer.pas',
   Delphi.Serial.Protobuf.OutputSerializer in '..\source\Delphi.Serial.Protobuf.OutputSerializer.pas',
-  Delphi.Serial.ProtobufTypes in '..\source\Delphi.Serial.ProtobufTypes.pas';
+  Delphi.Serial.ProtobufTypes in '..\source\Delphi.Serial.ProtobufTypes.pas',
+  Delphi.Serial.Json.OutputSerializer in '..\source\Delphi.Serial.Json.OutputSerializer.pas',
+  Delphi.Serial.Json.InputSerializer in '..\source\Delphi.Serial.Json.InputSerializer.pas';
 
 end.

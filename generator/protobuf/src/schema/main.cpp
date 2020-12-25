@@ -19,6 +19,7 @@ int convert_binary_to_json(const char *inputPath, const char *outputPath)
     addressbook.ParseFromIstream(&istream);
     std::string json;
     google::protobuf::util::JsonPrintOptions options;
+    options.add_whitespace = true;
     google::protobuf::util::MessageToJsonString(addressbook, &json, options);
     std::ofstream(outputPath) << json;
     return 0;

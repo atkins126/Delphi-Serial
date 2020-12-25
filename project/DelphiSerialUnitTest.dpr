@@ -29,7 +29,8 @@ uses
   Delphi.Serial.ProtobufTypesTest in '..\test\Delphi.Serial.ProtobufTypesTest.pas',
   Delphi.Serial.Protobuf.SerializerTest in '..\test\Delphi.Serial.Protobuf.SerializerTest.pas',
   Delphi.Serial.Protobuf.OutputSerializerTest in '..\test\Delphi.Serial.Protobuf.OutputSerializerTest.pas',
-  Schema.Addressbook.Proto in '..\test\generated\Schema.Addressbook.Proto.pas';
+  Schema.Addressbook.Proto in '..\test\generated\Schema.Addressbook.Proto.pas',
+  Delphi.Serial.Json.OutputSerializerTest in '..\test\Delphi.Serial.Json.OutputSerializerTest.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

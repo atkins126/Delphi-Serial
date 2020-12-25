@@ -10,6 +10,14 @@ type
   FieldAttribute = class(TCustomAttribute);
   RequiredAttribute = class(FieldAttribute);
 
+  FieldNameAttribute = class(FieldAttribute)
+    private
+      FValue: string;
+    public
+      constructor Create(const AValue: string);
+      property Value: string read FValue;
+  end;
+
   ISerializer = IRttiObserver;
 
   TSerial = class
@@ -28,6 +36,13 @@ implementation
 
 uses
   Delphi.Serial.RttiVisitor;
+
+{ FieldNameAttribute }
+
+constructor FieldNameAttribute.Create(const AValue: string);
+begin
+  FValue := AValue;
+end;
 
 { TSerial }
 
