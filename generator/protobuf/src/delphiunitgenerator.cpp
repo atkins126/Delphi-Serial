@@ -67,8 +67,15 @@ void DelphiUnitGenerator::Print(const EnumDescriptor *desc)
     _variables["enumname"] = enumname;
     _printer.Print(_variables, "$enumname$ = (\n");
     _printer.Indent();
+    int nextNumber = 0;
     for (int i = 0; i < desc->value_count(); ++i) {
+        const auto number = desc->value(i)->number();
+        for (int k = nextNumber; k < number; ++k) {
+            _variables["valuenumber"] = std::to_string(k);
+            _printer.Print(_variables, "_unused$valuenumber$ = $valuenumber$,\n");
+        }
         Print(desc->value(i));
+        nextNumber = number + 1;
     }
     _printer.Outdent();
     _printer.Print(_variables, ");\n\n");
