@@ -71,6 +71,9 @@ begin
   Addressbook.Serialize(FSerializer);
   Assert.AreEqual<Int64>(22, FStream.Position);
   FStream.Position := 0;
+  Addressbook.Serialize(FSerializer); // test reusing the serializer
+  Assert.AreEqual<Int64>(22, FStream.Position);
+  FStream.Position := 0;
 //  FStream.SaveToFile('addressbook.data');
 end;
 

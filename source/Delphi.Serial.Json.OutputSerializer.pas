@@ -129,6 +129,9 @@ end;
 procedure TOutputSerializer.BeginAll;
 begin
   FJsonWriter.Rewind;
+  FFieldRecursion := 0;
+  FLastStarted    := 0;
+  CurrentContext^ := Default (TFieldContext);
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
@@ -161,7 +164,7 @@ end;
 
 procedure TOutputSerializer.EndAll;
 begin
-  FJsonWriter.Flush;
+  FJsonWriter.Close;
 end;
 
 procedure TOutputSerializer.EndDynamicArray;

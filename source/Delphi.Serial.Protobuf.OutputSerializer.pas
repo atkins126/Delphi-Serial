@@ -199,7 +199,7 @@ end;
 
 procedure TOutputSerializer.BeginAll;
 begin
-  // ignore
+  FFieldRecursion := - 1;
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);

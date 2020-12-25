@@ -308,7 +308,7 @@ begin
       Expect.Exactly('EndRecord', 15);
       Expect.Exactly('EndField', 140);
       Expect.Exactly('Attribute', 22);
-      Expect.Exactly('Value', 276);
+      Expect.Exactly('Value', 223);
       Expect.Exactly(10).When.SkipCaseBranch(0);
       Expect.Exactly(10).When.SkipCaseBranch(1);
     end;
