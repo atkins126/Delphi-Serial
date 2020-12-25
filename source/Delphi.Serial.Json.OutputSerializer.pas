@@ -240,64 +240,71 @@ end;
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: ShortString);
@@ -312,28 +319,31 @@ end;
 procedure TOutputSerializer.Value(var AValue: AnsiString);
 begin
   with CurrentContext^ do
-    if (AValue = '') and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(string(AValue));
+    if (AValue <> '') or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(string(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: WideString);
 begin
   with CurrentContext^ do
-    if (AValue = '') and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> '') or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UnicodeString);
 begin
   with CurrentContext^ do
-    if (AValue = '') and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> '') or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
@@ -341,66 +351,73 @@ var
   Bytes: TBytes;
 begin
   with CurrentContext^ do
-    if (AByteCount = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  SetLength(Bytes, AByteCount);
-  Move(AValue^, Bytes[0], AByteCount);
-  FJsonWriter.WriteValue(Bytes);
+    if (AByteCount <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        SetLength(Bytes, AByteCount);
+        Move(AValue^, Bytes[0], AByteCount);
+        FJsonWriter.WriteValue(Bytes);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Extended);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
   with CurrentContext^ do
-    if (AValue = 0) and (not FIsArray) and not FIsRequired then
-      Exit;
-  CheckStartValue;
-  FJsonWriter.WriteValue(AValue);
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
 end;
 
 end.
