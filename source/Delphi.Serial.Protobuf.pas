@@ -20,6 +20,7 @@ type
   SFixed32          = type Int32;
   SFixed64          = type Int64;
 
+  OneofAttribute    = class(FieldAttribute);
   UnPackedAttribute = class(FieldAttribute);
 
   FieldTagAttribute = class(FieldAttribute)

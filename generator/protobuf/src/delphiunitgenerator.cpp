@@ -2,13 +2,18 @@
 
 #include "delphiutils.h"
 
-DelphiUnitGenerator::DelphiUnitGenerator(const std::string &unitname,
-                                         const std::string &parameter,
+DelphiUnitGenerator::DelphiUnitGenerator(
+    const std::string &unitname,
+    const std::vector<std::pair<std::string, std::string>> &parameters,
                                          io::ZeroCopyOutputStream *stream)
     : _printer(stream, '$')
 {
     _variables["unitname"] = unitname;
-    // init parameters
+    for (const auto &pair : parameters) {
+        if (pair.first == "emit_json_names") {
+            _emitJsonNames = true;
+        }
+    }
 }
 
 void DelphiUnitGenerator::Generate(const FileDescriptor *desc)
@@ -23,6 +28,9 @@ void DelphiUnitGenerator::Print(const FileDescriptor *desc)
     _printer.Print(_variables, "interface\n\n");
     _printer.Print(_variables, "uses\n");
     _printer.Indent();
+    if (_emitJsonNames) {
+        _printer.Print(_variables, "Delphi.Serial,\n");
+    }
     _printer.Print(_variables, "Delphi.Serial.Protobuf;\n\n");
     _printer.Outdent();
     _printer.Print(_variables, "type\n\n");
@@ -102,6 +110,9 @@ void DelphiUnitGenerator::Print(const Field &field)
     if (field.packable && !field.packed) {
         fieldoptions += ", UnPacked";
     }
+    if (_emitJsonNames) {
+        fieldoptions += ", FieldName('" + field.json_name + "')";
+    }
     _variables["fieldname"] = field.name;
     _variables["fieldtype"] = field.repeated ? GetArrayType(field.type) : field.type;
     _variables["fieldtag"] = std::to_string(field.tag);
@@ -132,6 +143,7 @@ std::vector<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Des
     for (int i = 0; i < desc->field_count(); ++i) {
         const auto field = desc->field(i);
         result.push_back({GetFieldName(field->name()),
+                          field->json_name(),
                           GetFieldType(field),
                           field->is_required(),
                           field->is_repeated(),

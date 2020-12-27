@@ -24,9 +24,11 @@ type
     FIsArray: Boolean;
     FIsPacked: Boolean;
     FIsPackedArray: Boolean;
+    FIsOneof: Boolean;
     FIsBytes: Boolean;
     FIsSigned: Boolean;
     FIsFixed: Boolean;
+    FCaseBranch: Integer;
     procedure Initialize(const AName: string);
   end;
 
@@ -124,9 +126,10 @@ uses
 
 procedure TFieldContext.Initialize(const AName: string);
 begin
-  Self       := Default (TFieldContext);
-  FFieldName := AName;
-  FIsPacked  := True; // packable repeated fields are packed by default
+  Self        := Default (TFieldContext);
+  FFieldName  := AName;
+  FIsPacked   := True; // packable repeated fields are packed by default
+  FCaseBranch := - 1;
 end;
 
 { TUTF8Encoding }
@@ -157,7 +160,7 @@ end;
 
 constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
 begin
-  FWriter := TProtobufWriter.Create(AStream);
+  FWriter         := TProtobufWriter.Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
   FFieldRecursion := - 1;
 end;
@@ -187,7 +190,9 @@ begin
           else if AAttribute is RequiredAttribute then
             FIsRequired := True
           else if AAttribute is UnPackedAttribute then
-            FIsPacked   := False;
+            FIsPacked   := False
+          else if AAttribute is OneofAttribute then
+            FIsOneof    := True;
         end;
     end;
 end;
@@ -323,7 +328,8 @@ end;
 
 function TOutputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
 begin
-  Result := False;
+  with CurrentContext^ do
+    Result := (FCaseBranch >= 0) and (FCaseBranch <> ABranch);
 end;
 
 function TOutputSerializer.SkipEnumNames: Boolean;
@@ -450,23 +456,31 @@ end;
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        if not FIsPackedArray then
-          FWriter.Pack(TWireType.VarInt, FFieldTag);
-        FWriter.Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue <> 0) or FIsArray or FIsRequired then
+        begin
+          if not FIsPackedArray then
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
+        end;
+      if FIsOneof then
+        FCaseBranch := AValue;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        if not FIsPackedArray then
-          FWriter.Pack(TWireType.VarInt, FFieldTag);
-        FWriter.Pack(VarInt(AValue));
-      end;
+    begin
+      if (AValue <> 0) or FIsArray or FIsRequired then
+        begin
+          if not FIsPackedArray then
+            FWriter.Pack(TWireType.VarInt, FFieldTag);
+          FWriter.Pack(VarInt(AValue));
+        end;
+      if FIsOneof then
+        FCaseBranch := AValue;
+    end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);

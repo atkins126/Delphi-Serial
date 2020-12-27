@@ -7,8 +7,18 @@ uses
 
 type
 
-  FieldAttribute    = class(TCustomAttribute);
+  SerialAttribute   = class(TCustomAttribute);
+  RecordAttribute   = class(SerialAttribute);
+  FieldAttribute    = class(SerialAttribute);
   RequiredAttribute = class(FieldAttribute);
+
+  DefaultValueAttribute = class(FieldAttribute)
+    private
+      FValue: Variant;
+    public
+      constructor Create(AValue: Variant);
+      property Value: Variant read FValue;
+  end;
 
   FieldNameAttribute = class(FieldAttribute)
     private
@@ -40,6 +50,13 @@ implementation
 
 uses
   Delphi.Serial.RttiVisitor;
+
+{ DefaultValueAttribute }
+
+constructor DefaultValueAttribute.Create(AValue: Variant);
+begin
+  FValue := AValue;
+end;
 
 { FieldNameAttribute }
 

@@ -11,7 +11,7 @@ class DelphiUnitGenerator
 {
 public:
     DelphiUnitGenerator(const std::string &unitname,
-                        const std::string &parameter,
+                        const std::vector<std::pair<std::string, std::string>> &parameters,
                         io::ZeroCopyOutputStream *stream);
 
     void Generate(const FileDescriptor *desc);
@@ -20,6 +20,7 @@ private:
     struct Field
     {
         std::string name;
+        std::string json_name;
         std::string type;
         bool required;
         bool repeated;
@@ -44,10 +45,11 @@ private:
     std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
 
-    std::map<std::string, std::string> _parameters;
     std::map<std::string, std::string> _variables;
     std::set<std::string> _types;
     io::Printer _printer;
+
+    bool _emitJsonNames = false;
 };
 
 #endif // DELPHIUNITGENERATOR_H

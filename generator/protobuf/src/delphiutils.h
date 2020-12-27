@@ -11,6 +11,13 @@ inline std::string GetRecordName(const std::string &name)
     return "T" + GetCamelCase(name);
 }
 
+inline std::string GetUnitName(const std::string &name)
+{
+    auto result = GetCamelCase(name);
+    std::replace(result.begin(), result.end(), '/', '.');
+    return result;
+}
+
 inline std::string GetEnumName(const std::string &name)
 {
     return "T" + GetCamelCase(name);
