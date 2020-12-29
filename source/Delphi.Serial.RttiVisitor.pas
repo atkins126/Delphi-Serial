@@ -27,11 +27,11 @@ type
       procedure Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AEnumTypeInfo: Pointer); overload;
 
       class function GetEnumName(AType: TRttiOrdinalType; AEnumTypeInfo: Pointer; Value: Integer): string; static;
-      class function GetCaseOffset(AType: TRttiRecordType): Integer; static;
 
     public
       procedure Initialize(AObserver: IRttiObserver);
       procedure Visit<T>(var AValue: T); overload;
+      procedure Visit(AValue, ATypeInfo: Pointer); overload;
   end;
 
 implementation
@@ -51,9 +51,14 @@ end;
 
 procedure TRttiVisitor.Visit<T>(var AValue: T);
 begin
+  Visit(Addr(AValue), TypeInfo(T));
+end;
+
+procedure TRttiVisitor.Visit(AValue, ATypeInfo: Pointer);
+begin
   FObserver.BeginAll;
   try
-    VisitType(Addr(AValue), FContext.GetType(TypeInfo(T)));
+    VisitType(AValue, FContext.GetType(ATypeInfo));
   finally
     FObserver.EndAll;
   end;
@@ -100,46 +105,16 @@ end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiRecordType);
 var
-  Attribute : TCustomAttribute;
-  Field     : TRttiField;
-  CaseOffset: Integer;
-  CaseBranch: Integer;
-  SkipBranch: Boolean;
+  Attribute: TCustomAttribute;
+  Field    : TRttiField;
 begin
   FObserver.BeginRecord;
   if not FObserver.SkipAttributes then
     for Attribute in AType.GetAttributes do
       FObserver.Attribute(Attribute);
-
-  CaseOffset := GetCaseOffset(AType);
-  CaseBranch := 0;
-  SkipBranch := False;
   for Field in AType.GetFields do
-    begin
-      if Field.Offset = CaseOffset then
-        begin
-          SkipBranch := FObserver.SkipCaseBranch(CaseBranch);
-          Inc(CaseBranch);
-        end;
-      if not SkipBranch then
-        Visit(AInstance, Field);
-    end;
+    Visit(AInstance, Field);
   FObserver.EndRecord;
-end;
-
-class function TRttiVisitor.GetCaseOffset(AType: TRttiRecordType): Integer;
-var
-  Field     : TRttiField;
-  LastOffset: Integer;
-begin
-  Result     := - 1;
-  LastOffset := - 1;
-  for Field in AType.GetFields do
-    begin
-      if Field.Offset <= LastOffset then
-        Exit(Field.Offset);
-      LastOffset := Field.Offset;
-    end;
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AField: TRttiField);

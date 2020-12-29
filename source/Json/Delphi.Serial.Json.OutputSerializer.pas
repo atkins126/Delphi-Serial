@@ -76,7 +76,6 @@ type
       function SkipField: Boolean;
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
-      function SkipCaseBranch(ABranch: Integer): Boolean;
 
       procedure DataType(AType: TRttiType);
       procedure EnumName(const AName: string);
@@ -273,11 +272,6 @@ begin
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
-begin
-  Result := False;
-end;
-
-function TOutputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
 begin
   Result := False;
 end;

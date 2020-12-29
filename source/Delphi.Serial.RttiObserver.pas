@@ -43,7 +43,6 @@ type
     function SkipField: Boolean;
     function SkipEnumNames: Boolean;
     function SkipAttributes: Boolean;
-    function SkipCaseBranch(ABranch: Integer): Boolean;
 
     procedure DataType(AType: TRttiType);
     procedure EnumName(const AName: string);

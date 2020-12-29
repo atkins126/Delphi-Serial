@@ -22,13 +22,14 @@ type
     FArrayLength: Integer;
     FIsRequired: Boolean;
     FIsArray: Boolean;
-    FIsPacked: Boolean;
+    FIsUnPacked: Boolean;
     FIsPackedArray: Boolean;
-    FIsOneof: Boolean;
     FIsBytes: Boolean;
     FIsSigned: Boolean;
     FIsFixed: Boolean;
-    FCaseBranch: Integer;
+    FIsOneof: Boolean;
+    FOneofCase: Integer;
+    FOneofFieldIndex: Integer;
     procedure Initialize(const AName: string);
   end;
 
@@ -63,6 +64,7 @@ type
       class var FUTF8Encoding: TUTF8Encoding;
 
       function CurrentContext: PFieldContext; inline;
+      function PreviousContext: PFieldContext; inline;
       procedure BeginLengthPrefixedWithUnknownSize;
       procedure EndLengthPrefixedWithUnknownSize;
       procedure PackLengthPrefix(WrittenCount: Integer);
@@ -102,7 +104,6 @@ type
       function SkipField: Boolean;
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
-      function SkipCaseBranch(ABranch: Integer): Boolean;
 
       procedure DataType(AType: TRttiType);
       procedure EnumName(const AName: string);
@@ -126,10 +127,8 @@ uses
 
 procedure TFieldContext.Initialize(const AName: string);
 begin
-  Self        := Default (TFieldContext);
-  FFieldName  := AName;
-  FIsPacked   := True; // packable repeated fields are packed by default
-  FCaseBranch := - 1;
+  Self       := Default (TFieldContext);
+  FFieldName := AName;
 end;
 
 { TUTF8Encoding }
@@ -177,6 +176,12 @@ begin
   Result := Addr(FFieldContexts[FFieldRecursion]);
 end;
 
+function TOutputSerializer.PreviousContext: PFieldContext;
+begin
+  Assert(FFieldRecursion >= 1);
+  Result := Addr(FFieldContexts[FFieldRecursion - 1]);
+end;
+
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
   if AAttribute is FieldAttribute then
@@ -190,7 +195,7 @@ begin
           else if AAttribute is RequiredAttribute then
             FIsRequired := True
           else if AAttribute is UnPackedAttribute then
-            FIsPacked   := False
+            FIsUnPacked := True
           else if AAttribute is OneofAttribute then
             FIsOneof    := True;
         end;
@@ -207,7 +212,7 @@ end;
 
 procedure TOutputSerializer.BeginRecord;
 begin
-  if FFieldRecursion >= 0 then
+  if (FFieldRecursion >= 0) and not CurrentContext.FIsOneof then
     BeginLengthPrefixedWithUnknownSize;
 end;
 
@@ -262,7 +267,7 @@ end;
 
 procedure TOutputSerializer.EndRecord;
 begin
-  if FFieldRecursion >= 0 then
+  if (FFieldRecursion >= 0) and not CurrentContext.FIsOneof then
     EndLengthPrefixedWithUnknownSize;
 end;
 
@@ -326,12 +331,6 @@ begin
   end;
 end;
 
-function TOutputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
-begin
-  with CurrentContext^ do
-    Result := (FCaseBranch >= 0) and (FCaseBranch <> ABranch);
-end;
-
 function TOutputSerializer.SkipEnumNames: Boolean;
 begin
   Result := True;
@@ -339,7 +338,22 @@ end;
 
 function TOutputSerializer.SkipField: Boolean;
 begin
-  Result := CurrentContext.FFieldTag = 0;
+  with CurrentContext^ do
+    if FIsOneof then
+      Result := False
+    else if FFieldTag = 0 then
+      Result := True
+    else if FFieldRecursion <= 0 then
+      Result := False
+    else
+      with PreviousContext^ do
+        if FIsOneof then
+          begin
+            Result := FOneofCase <> FOneofFieldIndex;
+            Inc(FOneofFieldIndex);
+          end
+        else
+          Result := False
 end;
 
 procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
@@ -378,7 +392,7 @@ begin
       if FIsArray then
         begin
           FIsBytes       := AType.Handle = TypeInfo(TBytes);
-          FIsPackedArray := FIsPacked and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
+          FIsPackedArray := (not FIsUnPacked) and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
         end;
     end;
 end;
@@ -456,31 +470,35 @@ end;
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue <> 0) or FIsArray or FIsRequired then
+    if FIsOneof then // this is the case field of a oneof record
+      with PreviousContext^ do
         begin
-          if not FIsPackedArray then
-            FWriter.Pack(TWireType.VarInt, FFieldTag);
-          FWriter.Pack(VarInt(AValue));
-        end;
-      if FIsOneof then
-        FCaseBranch := AValue;
-    end;
+          Assert(FIsOneof);    // check that the containing record is marked as oneof
+          FOneofCase := AValue // use the context of the oneof record to keep the case value
+        end
+    else if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        if not FIsPackedArray then
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
-    begin
-      if (AValue <> 0) or FIsArray or FIsRequired then
+    if FIsOneof then // this is the case field of a oneof record
+      with PreviousContext^ do
         begin
-          if not FIsPackedArray then
-            FWriter.Pack(TWireType.VarInt, FFieldTag);
-          FWriter.Pack(VarInt(AValue));
-        end;
-      if FIsOneof then
-        FCaseBranch := AValue;
-    end;
+          Assert(FIsOneof);    // check that the containing record is marked as oneof
+          FOneofCase := AValue // use the context of the oneof record to keep the case value
+        end
+    else if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        if not FIsPackedArray then
+          FWriter.Pack(TWireType.VarInt, FFieldTag);
+        FWriter.Pack(VarInt(AValue));
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);

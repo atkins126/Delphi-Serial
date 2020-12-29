@@ -49,7 +49,6 @@ type
       function SkipField: Boolean;
       function SkipEnumNames: Boolean;
       function SkipAttributes: Boolean;
-      function SkipCaseBranch(ABranch: Integer): Boolean;
 
       procedure DataType(AType: TRttiType);
       procedure EnumName(const AName: string);
@@ -144,11 +143,6 @@ end;
 function TInputSerializer.GetOption(const AName: string): Variant;
 begin
   raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
-end;
-
-function TInputSerializer.SkipCaseBranch(ABranch: Integer): Boolean;
-begin
-  Result := False;
 end;
 
 function TInputSerializer.SkipEnumNames: Boolean;

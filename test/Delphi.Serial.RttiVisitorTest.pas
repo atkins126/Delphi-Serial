@@ -11,31 +11,24 @@ uses
 
 type
 
-  AbcAttribute   = class(TCustomAttribute);
-  DefAttribute   = class(TCustomAttribute);
-  OneofAttribute = class(TCustomAttribute);
+  AbcAttribute = class(TCustomAttribute);
+  DefAttribute = class(TCustomAttribute);
 
-  TMyRange       = 0 .. 255;
-  TNoRtti        = (A = 1);
-  TUInt8Enum     = (B = 0);
-  TUInt16Enum    = (C, {$INCLUDE 'UInt16Enum.inc'});
-  TUInt32Enum    = (D, {$INCLUDE 'UInt32Enum.inc'});
-  TMyOneof       = (Bool, AChar, WChar);
-  TMyType        = type Integer;
-  TSmallSet      = set of TUInt8Enum;
-  TLargeSet      = set of TMyRange;
+  TMyRange     = 0 .. 255;
+  TNoRtti      = (A = 1);
+  TUInt8Enum   = (B = 0);
+  TUInt16Enum  = (C, {$INCLUDE 'UInt16Enum.inc'});
+  TUInt32Enum  = (D, {$INCLUDE 'UInt32Enum.inc'});
+  TMyType      = type Integer;
+  TSmallSet    = set of TUInt8Enum;
+  TLargeSet    = set of TMyRange;
 
   TMyElement = record
-  [Oneof]
-    case FMyOneof: TMyOneof of
-      TMyOneof.Bool:
-        (FBoolean: Boolean;
-          FMyType: TMyType;
-          FMyRange: TMyRange);
-      TMyOneof.AChar:
-        (FAnsiChar: AnsiChar);
-      TMyOneof.WChar:
-        (FWideChar: WideChar);
+    FBoolean: Boolean;
+    FMyType: TMyType;
+    FMyRange: TMyRange;
+    FAnsiChar: AnsiChar;
+    FWideChar: WideChar;
   end;
 
   TNoRttiArray       = array [0 .. 1, 0 .. 1] of TNoRtti;
@@ -190,8 +183,6 @@ type
     private
       FMyRecord  : TMyRecord;
       FSerializer: TMock<IRttiObserver>;
-      FSaveOneof : Boolean;
-      FOneofValue: TMyOneof;
       FKeepEmpty : Boolean;
 
     public
@@ -247,26 +238,6 @@ begin
           else
             args[1] := 2;
         end);
-      WillExecute('Attribute',
-        function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
-        begin
-          if args[1].AsType<TCustomAttribute> is OneofAttribute then
-            FSaveOneof := True;
-        end);
-      WillExecute('Value',
-        function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
-        begin
-          if FSaveOneof then
-            begin
-              FOneofValue := TMyOneof(args[1].AsType<Integer>);
-              FSaveOneof := False;
-            end;
-        end);
-      WillExecute('SkipCaseBranch',
-        function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
-        begin
-          Result := TMyOneof(args[1].AsType<Integer>) <> FOneofValue;
-        end);
       WillExecute('BeginField',
         function(const args: TArray<TValue>; const ReturnType: TRttiType): TValue
         begin
@@ -275,7 +246,6 @@ begin
         end);
     end;
 
-  FSaveOneof := False;
   FKeepEmpty := False;
 end;
 
@@ -298,7 +268,7 @@ begin
       Expect.Exactly(10).When.EnumName('C');
       Expect.Exactly(10).When.EnumName('D');
       Expect.Exactly(3).When.EnumName('[Unknown]');
-      Expect.Exactly(36).When.DataType(It0.Matches<TRttiType>(
+      Expect.Exactly(26).When.DataType(It0.Matches<TRttiType>(
           function(AType: TRttiType): Boolean
         begin
           Result := AType is TRttiEnumerationType;
@@ -306,11 +276,9 @@ begin
       Expect.Exactly(24).When.BeginStaticArray(4);
       Expect.Exactly('BeginDynamicArray', 99);
       Expect.Exactly('EndRecord', 15);
-      Expect.Exactly('EndField', 140);
-      Expect.Exactly('Attribute', 22);
-      Expect.Exactly('Value', 223);
-      Expect.Exactly(10).When.SkipCaseBranch(0);
-      Expect.Exactly(10).When.SkipCaseBranch(1);
+      Expect.Exactly('EndField', 150);
+      Expect.Exactly('Attribute', 2);
+      Expect.Exactly('Value', 243);
     end;
   FMyRecord.Serialize(FSerializer);
   FSerializer.VerifyAll;
