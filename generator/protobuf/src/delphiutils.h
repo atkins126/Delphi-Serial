@@ -6,9 +6,16 @@
 
 std::string GetCamelCase(const std::string &name);
 
+inline std::string GetFullName(const std::string &name)
+{
+    auto result = GetCamelCase(name);
+    result.erase(std::remove(result.begin(), result.end(), '.'), result.end());
+    return result;
+}
+
 inline std::string GetRecordName(const std::string &name)
 {
-    return "T" + GetCamelCase(name);
+    return "T" + GetFullName(name);
 }
 
 inline std::string GetUnitName(const std::string &name)
@@ -20,7 +27,7 @@ inline std::string GetUnitName(const std::string &name)
 
 inline std::string GetEnumName(const std::string &name)
 {
-    return "T" + GetCamelCase(name);
+    return "T" + GetFullName(name);
 }
 
 inline std::string GetFieldName(const std::string &name)

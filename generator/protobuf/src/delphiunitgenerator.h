@@ -27,6 +27,7 @@ private:
         bool packable;
         bool packed;
         int tag;
+        const OneofDescriptor *oneof;
     };
     struct Enumerator
     {
@@ -36,12 +37,14 @@ private:
     };
 
     void Print(const FileDescriptor *desc);
-    void Print(const Descriptor *desc);
-    void Print(const EnumDescriptor *desc);
+    std::string Print(const Descriptor *desc);
+    std::string Print(const EnumDescriptor *desc);
     void Print(const Enumerator &enumerator);
     void Print(const Field &field);
+    void Print(const OneofDescriptor *oneof, bool closePrevious);
 
     std::vector<Enumerator> GetEnumerators(const EnumDescriptor *desc);
+    std::vector<Enumerator> GetEnumerators(const OneofDescriptor *desc);
     std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
 
@@ -50,6 +53,7 @@ private:
     io::Printer _printer;
 
     bool _emitJsonNames = false;
+    bool _emitUnusedTypes = false;
 };
 
 #endif // DELPHIUNITGENERATOR_H
