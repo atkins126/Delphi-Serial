@@ -278,7 +278,7 @@ begin
       Expect.Exactly('EndRecord', 15);
       Expect.Exactly('EndField', 150);
       Expect.Exactly('Attribute', 2);
-      Expect.Exactly('Value', 243);
+      Expect.Exactly('Value', 286);
     end;
   FMyRecord.Serialize(FSerializer);
   FSerializer.VerifyAll;

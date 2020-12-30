@@ -18,6 +18,7 @@ type
     FIsRecord: Boolean;
     FIsArray: Boolean;
     FValueStarted: Boolean;
+    FEnumName: string;
   end;
 
   PFieldContext = ^TFieldContext;
@@ -235,11 +236,10 @@ end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
 begin
-  CheckStartValue;
   if FUpperCaseEnums then
-    FJsonWriter.WriteValue(AName.ToUpper)
+    CurrentContext.FEnumName := AName.ToUpper
   else
-    FJsonWriter.WriteValue(AName);
+    CurrentContext.FEnumName := AName;
 end;
 
 function TOutputSerializer.GetOption(const AName: string): Variant;
@@ -286,36 +286,6 @@ begin
   Result := CurrentContext.FFieldName.IsEmpty;
 end;
 
-procedure TOutputSerializer.Value(var AValue: Int64);
-begin
-  with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        CheckStartValue;
-        FJsonWriter.WriteValue(AValue);
-      end;
-end;
-
-procedure TOutputSerializer.Value(var AValue: UInt8);
-begin
-  with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        CheckStartValue;
-        FJsonWriter.WriteValue(AValue);
-      end;
-end;
-
-procedure TOutputSerializer.Value(var AValue: UInt16);
-begin
-  with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        CheckStartValue;
-        FJsonWriter.WriteValue(AValue);
-      end;
-end;
-
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
   with CurrentContext^ do
@@ -346,7 +316,56 @@ begin
       end;
 end;
 
+procedure TOutputSerializer.Value(var AValue: Int64);
+begin
+  with CurrentContext^ do
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        FJsonWriter.WriteValue(AValue);
+      end;
+end;
+
+procedure TOutputSerializer.Value(var AValue: UInt8);
+begin
+  with CurrentContext^ do
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        if FEnumName.IsEmpty then
+          FJsonWriter.WriteValue(AValue)
+        else
+          FJsonWriter.WriteValue(FEnumName);
+      end;
+end;
+
+procedure TOutputSerializer.Value(var AValue: UInt16);
+begin
+  with CurrentContext^ do
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        if FEnumName.IsEmpty then
+          FJsonWriter.WriteValue(AValue)
+        else
+          FJsonWriter.WriteValue(FEnumName);
+      end;
+end;
+
 procedure TOutputSerializer.Value(var AValue: UInt32);
+begin
+  with CurrentContext^ do
+    if (AValue <> 0) or FIsArray or FIsRequired then
+      begin
+        CheckStartValue;
+        if FEnumName.IsEmpty then
+          FJsonWriter.WriteValue(AValue)
+        else
+          FJsonWriter.WriteValue(FEnumName);
+      end;
+end;
+
+procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
@@ -410,16 +429,6 @@ begin
 end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
-begin
-  with CurrentContext^ do
-    if (AValue <> 0) or FIsArray or FIsRequired then
-      begin
-        CheckStartValue;
-        FJsonWriter.WriteValue(AValue);
-      end;
-end;
-
-procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then

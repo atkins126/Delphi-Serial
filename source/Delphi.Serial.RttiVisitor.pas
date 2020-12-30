@@ -217,10 +217,9 @@ end;
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiEnumerationType; ACount: Integer);
 begin
   Assert(AType.UnderlyingType is TRttiOrdinalType);
-  if FObserver.SkipEnumNames then
-    Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount)
-  else
+  if not FObserver.SkipEnumNames then
     Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount, AType.Handle);
+  Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount);
 end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiSetType; ACount: Integer);
