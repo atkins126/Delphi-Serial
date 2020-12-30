@@ -15,7 +15,7 @@ type
   TProtobufWriter = Delphi.Serial.Protobuf.Writer.TWriter;
 
   [TestFixture]
-  TSerializerTest = class
+  TReaderWriterTest = class
     private
       FStream: TCustomMemoryStream;
       FReader: TProtobufReader;
@@ -116,25 +116,25 @@ type
 implementation
 
 uses
-  Delphi.Serial.ProtobufTypes;
+  Delphi.Serial.Protobuf.Types;
 
 { TSerializerTest }
 
-procedure TSerializerTest.Setup;
+procedure TReaderWriterTest.Setup;
 begin
   FStream := TMemoryStream.Create;
   FReader := TProtobufReader.Create(FStream);
   FWriter := TProtobufWriter.Create(FStream);
 end;
 
-procedure TSerializerTest.TearDown;
+procedure TReaderWriterTest.TearDown;
 begin
   FReader.Free;
   FWriter.Free;
   FStream.Free;
 end;
 
-procedure TSerializerTest.TestSkipAndMove(ACount: Integer);
+procedure TReaderWriterTest.TestSkipAndMove(ACount: Integer);
 var
   StreamPos   : Int64;
   WrittenCount: Integer;
@@ -154,7 +154,7 @@ begin
   Assert.AreEqual(1, UInt32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSFixed32(AValue: SFixed32);
+procedure TReaderWriterTest.TestPackAndParseSFixed32(AValue: SFixed32);
 var
   Target: FixedInt32;
 begin
@@ -164,7 +164,7 @@ begin
   Assert.AreEqual(AValue, SFixed32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSFixed64(AValue: SFixed64);
+procedure TReaderWriterTest.TestPackAndParseSFixed64(AValue: SFixed64);
 var
   Target: FixedInt64;
 begin
@@ -174,7 +174,7 @@ begin
   Assert.AreEqual<SFixed64>(AValue, SFixed64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseFixed32(AValue: Fixed32);
+procedure TReaderWriterTest.TestPackAndParseFixed32(AValue: Fixed32);
 var
   Target: FixedInt32;
 begin
@@ -184,7 +184,7 @@ begin
   Assert.AreEqual(AValue, Fixed32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseFixed64(AValue: Fixed64);
+procedure TReaderWriterTest.TestPackAndParseFixed64(AValue: Fixed64);
 var
   Target: FixedInt64;
 begin
@@ -194,7 +194,7 @@ begin
   Assert.AreEqual<Fixed64>(AValue, Fixed64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseInt32(AValue: Int32);
+procedure TReaderWriterTest.TestPackAndParseInt32(AValue: Int32);
 var
   Target: VarInt;
 begin
@@ -204,7 +204,7 @@ begin
   Assert.AreEqual(AValue, Int32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseInt64(AValue: Int64);
+procedure TReaderWriterTest.TestPackAndParseInt64(AValue: Int64);
 var
   Target: VarInt;
 begin
@@ -214,7 +214,7 @@ begin
   Assert.AreEqual(AValue, Int64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSInt32(AValue: SInt32);
+procedure TReaderWriterTest.TestPackAndParseSInt32(AValue: SInt32);
 var
   Target: SignedInt;
 begin
@@ -224,7 +224,7 @@ begin
   Assert.AreEqual(AValue, SInt32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseSInt64(AValue: SInt64);
+procedure TReaderWriterTest.TestPackAndParseSInt64(AValue: SInt64);
 var
   Target: SignedInt;
 begin
@@ -234,7 +234,7 @@ begin
   Assert.AreEqual<SInt64>(AValue, SInt64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseUInt32(AValue: UInt32);
+procedure TReaderWriterTest.TestPackAndParseUInt32(AValue: UInt32);
 var
   Target: VarInt;
 begin
@@ -244,7 +244,7 @@ begin
   Assert.AreEqual(AValue, UInt32(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseUInt64(AValue: UInt64);
+procedure TReaderWriterTest.TestPackAndParseUInt64(AValue: UInt64);
 var
   Target: VarInt;
 begin
@@ -254,7 +254,7 @@ begin
   Assert.AreEqual(AValue, UInt64(Target));
 end;
 
-procedure TSerializerTest.TestPackAndParseWireTypeAndFieldTag(AWireType: Integer; AFieldTag: FieldTag);
+procedure TReaderWriterTest.TestPackAndParseWireTypeAndFieldTag(AWireType: Integer; AFieldTag: FieldTag);
 var
   TargetWireType: TWireType;
   TargetFieldTag: FieldTag;
@@ -268,6 +268,6 @@ end;
 
 initialization
 
-TDUnitX.RegisterTestFixture(TSerializerTest);
+TDUnitX.RegisterTestFixture(TReaderWriterTest);
 
 end.

@@ -1,4 +1,4 @@
-unit Delphi.Serial.ProtobufTypes;
+unit Delphi.Serial.Protobuf.Types;
 
 {$SCOPEDENUMS ON}
 

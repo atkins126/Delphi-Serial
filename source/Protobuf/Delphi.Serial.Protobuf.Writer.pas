@@ -4,7 +4,7 @@ interface
 
 uses
   Delphi.Serial.Protobuf,
-  Delphi.Serial.ProtobufTypes,
+  Delphi.Serial.Protobuf.Types,
   System.Classes;
 
 type

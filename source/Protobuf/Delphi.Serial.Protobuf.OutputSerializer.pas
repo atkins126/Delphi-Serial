@@ -120,7 +120,7 @@ type
 implementation
 
 uses
-  Delphi.Serial.ProtobufTypes,
+  Delphi.Serial.Protobuf.Types,
   System.TypInfo;
 
 { TFieldContext }

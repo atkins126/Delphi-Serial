@@ -26,7 +26,7 @@ uses
   Delphi.Serial.ThriftTest in '..\test\Delphi.Serial.ThriftTest.pas',
   Delphi.Serial.SbeTest in '..\test\Delphi.Serial.SbeTest.pas',
   Delphi.Serial.CborTest in '..\test\Delphi.Serial.CborTest.pas',
-  Delphi.Serial.ProtobufTypesTest in '..\test\Protobuf\Delphi.Serial.ProtobufTypesTest.pas',
+  Delphi.Serial.Protobuf.TypesTest in '..\test\Protobuf\Delphi.Serial.Protobuf.TypesTest.pas',
   Delphi.Serial.Protobuf.ReaderWriterTest in '..\test\Protobuf\Delphi.Serial.Protobuf.ReaderWriterTest.pas',
   Delphi.Serial.Protobuf.OutputSerializerTest in '..\test\Protobuf\Delphi.Serial.Protobuf.OutputSerializerTest.pas',
   Delphi.Serial.Json.OutputSerializerTest in '..\test\Json\Delphi.Serial.Json.OutputSerializerTest.pas',

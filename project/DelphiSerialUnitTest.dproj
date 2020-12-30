@@ -105,7 +105,7 @@
         <DCCReference Include="..\test\Delphi.Serial.ThriftTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.SbeTest.pas"/>
         <DCCReference Include="..\test\Delphi.Serial.CborTest.pas"/>
-        <DCCReference Include="..\test\Protobuf\Delphi.Serial.ProtobufTypesTest.pas"/>
+        <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.TypesTest.pas"/>
         <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.ReaderWriterTest.pas"/>
         <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.OutputSerializerTest.pas"/>
         <DCCReference Include="..\test\Json\Delphi.Serial.Json.OutputSerializerTest.pas"/>

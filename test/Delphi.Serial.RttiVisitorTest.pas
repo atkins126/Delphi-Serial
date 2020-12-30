@@ -281,7 +281,11 @@ begin
       Expect.Exactly('Value', 286);
     end;
   FMyRecord.Serialize(FSerializer);
-  FSerializer.VerifyAll;
+  Assert.WillNotRaise(
+    procedure
+    begin
+      FSerializer.VerifyAll;
+    end);
 end;
 
 initialization

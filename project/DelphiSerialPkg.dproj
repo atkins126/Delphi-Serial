@@ -105,7 +105,7 @@
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.Reader.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.InputSerializer.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.OutputSerializer.pas"/>
-        <DCCReference Include="..\source\Protobuf\Delphi.Serial.ProtobufTypes.pas"/>
+        <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.Types.pas"/>
         <DCCReference Include="..\source\Json\Delphi.Serial.Json.OutputSerializer.pas"/>
         <DCCReference Include="..\source\Json\Delphi.Serial.Json.InputSerializer.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.Writer.pas"/>

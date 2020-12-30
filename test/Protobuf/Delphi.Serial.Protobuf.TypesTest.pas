@@ -1,4 +1,4 @@
-unit Delphi.Serial.ProtobufTypesTest;
+unit Delphi.Serial.Protobuf.TypesTest;
 
 interface
 
@@ -92,7 +92,7 @@ type
 implementation
 
 uses
-  Delphi.Serial.ProtobufTypes,
+  Delphi.Serial.Protobuf.Types,
   System.SysUtils;
 
 { TVarIntTest }
