@@ -10,9 +10,9 @@ uses
 type
 
   TEnum = (
-    Value0 = 0,
+    &Value0 = 0,
     _unused1 = 1,
-    Value2 = 2
+    &Value2 = 2
   );
 
   TOptional = record

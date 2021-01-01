@@ -10,9 +10,9 @@ uses
 type
 
   TPersonPhoneType = (
-    Mobile = 0,
-    Home = 1,
-    Work = 2
+    &Mobile = 0,
+    &Home = 1,
+    &Work = 2
   );
 
   TPersonPhoneNumber = record

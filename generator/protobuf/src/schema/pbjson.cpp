@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/util/json_util.h>
 
 int convert_binary_to_json(google::protobuf::Message &message,
@@ -10,7 +11,7 @@ int convert_binary_to_json(google::protobuf::Message &message,
 {
     std::ifstream istream(inputPath);
     if (!message.ParseFromIstream(&istream)) {
-        std::cerr << "Could not parse the input file: " << inputPath << std::endl;
+        GOOGLE_LOG(ERROR) << "Could not parse the input file: " << inputPath;
         return -1;
     }
     std::string json;
@@ -20,7 +21,7 @@ int convert_binary_to_json(google::protobuf::Message &message,
     if (status.ok()) {
         std::ofstream(outputPath) << json;
     } else {
-        std::cerr << status.error_message() << std::endl;
+        GOOGLE_LOG(ERROR) << status.error_message();
     }
     return status.error_code();
 }
@@ -37,11 +38,11 @@ int convert_json_to_binary(google::protobuf::Message &message,
     if (status.ok()) {
         std::ofstream ostream(outputPath);
         if (!message.SerializeToOstream(&ostream)) {
-            std::cerr << "Could not write to the output file: " << outputPath << std::endl;
+            GOOGLE_LOG(ERROR) << "Could not write to the output file: " << outputPath;
             return -1;
         }
     } else {
-        std::cerr << status.error_message() << std::endl;
+        GOOGLE_LOG(ERROR) << status.error_message();
     }
     return status.error_code();
 }

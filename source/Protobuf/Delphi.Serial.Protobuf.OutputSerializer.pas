@@ -342,8 +342,8 @@ begin
       with PreviousContext^ do
         if FIsOneof then
           begin
-            Result := FOneofCase <> FOneofFieldIndex;
             Inc(FOneofFieldIndex);
+            Result := FOneofCase <> FOneofFieldIndex;
           end
         else
           Result := False

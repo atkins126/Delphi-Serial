@@ -1,5 +1,7 @@
 #include "delphiunitgenerator.h"
 
+#include <google/protobuf/stubs/logging.h>
+
 #include "delphiutils.h"
 
 DelphiUnitGenerator::DelphiUnitGenerator(
@@ -50,9 +52,8 @@ void DelphiUnitGenerator::Print(const FileDescriptor *desc)
 std::string DelphiUnitGenerator::Print(const Descriptor *desc)
 {
     const auto recordname = GetRecordName(desc->full_name());
-    if (_types.find(recordname) != _types.end())
+    if (!_types.emplace(recordname).second)
         return recordname;
-    _types.insert(recordname);
 
     if (_emitUnusedTypes) {
         for (int i = 0; i < desc->enum_type_count(); ++i) {
@@ -84,35 +85,52 @@ std::string DelphiUnitGenerator::Print(const Descriptor *desc)
 std::string DelphiUnitGenerator::Print(const EnumDescriptor *desc)
 {
     const auto enumname = GetEnumName(desc->full_name());
-    if (_types.find(enumname) != _types.end())
+    if (!_types.emplace(enumname).second)
         return enumname;
-    _types.insert(enumname);
 
     _variables["enumname"] = enumname;
     _printer.Print(_variables, "$enumname$ = (\n");
     _printer.Indent();
-    int nextNumber = 0;
-    for (const auto &enumerator : GetEnumerators(desc)) {
-        for (int k = nextNumber; k < enumerator.number; ++k) {
-            _variables["valuenumber"] = std::to_string(k);
-            _printer.Print(_variables, "_unused$valuenumber$ = $valuenumber$,\n");
-        }
-        Print(enumerator);
-        nextNumber = enumerator.number + 1;
+    EnumContext context;
+    context.nameprefix = GetPascalCase(desc->name());
+    for (const auto &enumerator : GetEnumValues(desc)) {
+        Print(enumerator, context);
     }
     _printer.Outdent();
     _printer.Print(_variables, ");\n\n");
     return enumname;
 }
 
-void DelphiUnitGenerator::Print(const Enumerator &enumerator)
+void DelphiUnitGenerator::Print(const EnumValue &value, EnumContext &context)
 {
-    _variables["valuename"] = GetFullName(enumerator.name);
-    _variables["valuenumber"] = std::to_string(enumerator.number);
-    if (enumerator.isLast) {
-        _printer.Print(_variables, "$valuename$ = $valuenumber$\n");
+    const auto valuename = GetEnumValueName(value.name, context.nameprefix);
+    if (!context.names.emplace(ToLower(valuename), value.number).second) {
+        GOOGLE_LOG(WARNING)
+            << "Enum name ignored because it would result in identifier redeclared: " << value.name;
+        return;
+    }
+    for (int k = context.nextNumber; k < value.number; ++k) {
+        _variables["valuenumber"] = std::to_string(k);
+        _printer.Print(_variables, "_unused$valuenumber$ = $valuenumber$,\n");
+    }
+    _variables["valuename"] = valuename;
+    _variables["valuenumber"] = std::to_string(value.number);
+    if (value.isLast) {
+        _printer.Print(_variables, "&$valuename$ = $valuenumber$\n");
     } else {
-        _printer.Print(_variables, "$valuename$ = $valuenumber$,\n");
+        _printer.Print(_variables, "&$valuename$ = $valuenumber$,\n");
+    }
+    context.nextNumber = value.number + 1;
+}
+
+void DelphiUnitGenerator::Print(const EnumValue &value)
+{
+    _variables["valuename"] = GetFullName(value.name);
+    _variables["valuenumber"] = std::to_string(value.number);
+    if (value.isLast) {
+        _printer.Print(_variables, "&$valuename$ = $valuenumber$\n");
+    } else {
+        _printer.Print(_variables, "&$valuename$ = $valuenumber$,\n");
     }
 }
 
@@ -153,7 +171,7 @@ void DelphiUnitGenerator::Print(const OneofDescriptor *oneof, bool closePrevious
         _printer.Indent();
         _printer.Print(_variables, "[Oneof] FCase: (\n");
         _printer.Indent();
-        for (const auto &enumerator : GetEnumerators(oneof)) {
+        for (const auto &enumerator : GetEnumValues(oneof)) {
             Print(enumerator);
         }
         _printer.Outdent();
@@ -161,37 +179,36 @@ void DelphiUnitGenerator::Print(const OneofDescriptor *oneof, bool closePrevious
     }
 }
 
-std::vector<DelphiUnitGenerator::Enumerator> DelphiUnitGenerator::GetEnumerators(
-    const EnumDescriptor *desc)
+auto DelphiUnitGenerator::GetEnumValues(const EnumDescriptor *desc) -> std::vector<EnumValue>
 {
-    std::vector<Enumerator> result;
+    std::vector<EnumValue> result;
     result.reserve(desc->value_count());
     for (int i = 0; i < desc->value_count(); ++i) {
         const auto value = desc->value(i);
-        result.push_back({ToLower(value->name()), value->number(), false});
+        result.push_back({value->name(), value->number(), false});
     }
-    std::sort(result.begin(), result.end(), [](const Enumerator &lhs, const Enumerator &rhs) {
+    std::sort(result.begin(), result.end(), [](const EnumValue &lhs, const EnumValue &rhs) {
         return lhs.number < rhs.number;
     });
     result.back().isLast = true;
     return result;
 }
 
-std::vector<DelphiUnitGenerator::Enumerator> DelphiUnitGenerator::GetEnumerators(
-    const OneofDescriptor *desc)
+auto DelphiUnitGenerator::GetEnumValues(const OneofDescriptor *desc) -> std::vector<EnumValue>
 {
-    std::vector<Enumerator> result;
-    result.reserve(desc->field_count());
+    std::vector<EnumValue> result;
+    result.reserve(desc->field_count() + 1);
+    result.push_back({desc->full_name() + "Unspecified", 0, false});
     for (int i = 0; i < desc->field_count(); ++i) {
         const auto field = desc->field(i);
         assert(i == field->index_in_oneof());
-        result.push_back({field->full_name(), i, false});
+        result.push_back({field->full_name(), i + 1, false});
     }
     result.back().isLast = true;
     return result;
 }
 
-std::vector<DelphiUnitGenerator::Field> DelphiUnitGenerator::GetFields(const Descriptor *desc)
+auto DelphiUnitGenerator::GetFields(const Descriptor *desc) -> std::vector<Field>
 {
     std::vector<Field> result;
     result.reserve(desc->field_count());

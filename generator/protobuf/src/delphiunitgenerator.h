@@ -29,22 +29,29 @@ private:
         int tag;
         const OneofDescriptor *oneof;
     };
-    struct Enumerator
+    struct EnumValue
     {
         std::string name;
         int number;
         int isLast;
     };
+    struct EnumContext
+    {
+        std::string nameprefix;
+        std::map<std::string, int> names;
+        int nextNumber = 0;
+    };
 
     void Print(const FileDescriptor *desc);
     std::string Print(const Descriptor *desc);
     std::string Print(const EnumDescriptor *desc);
-    void Print(const Enumerator &enumerator);
+    void Print(const EnumValue &enumerator, EnumContext &context);
+    void Print(const EnumValue &enumerator);
     void Print(const Field &field);
     void Print(const OneofDescriptor *oneof, bool closePrevious);
 
-    std::vector<Enumerator> GetEnumerators(const EnumDescriptor *desc);
-    std::vector<Enumerator> GetEnumerators(const OneofDescriptor *desc);
+    std::vector<EnumValue> GetEnumValues(const EnumDescriptor *desc);
+    std::vector<EnumValue> GetEnumValues(const OneofDescriptor *desc);
     std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
     std::string GetFieldOptions(const Field &field);
