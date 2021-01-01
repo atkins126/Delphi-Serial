@@ -14,6 +14,7 @@ type
     private
       FStream    : TCustomMemoryStream;
       FSerializer: ISerializer;
+      FVisitor   : TVisitor;
 
     public
       [Setup]
@@ -23,38 +24,27 @@ type
 
       [Test]
       procedure TestSerializeAddressBook;
+
+      [Test(False)]
+      procedure TestSerializeMessage;
   end;
 
 implementation
 
 uses
   Delphi.Serial.Protobuf.OutputSerializer,
-  Delphi.Serial.RttiVisitor,
-  Schema.Addressbook.Proto;
-
-type
-  TAddressBookHelper = record helper for TAddressBook
-    public
-      procedure Serialize(ASerializer: ISerializer); inline;
-  end;
-
-{ TAddressBookHelper }
-
-procedure TAddressBookHelper.Serialize(ASerializer: ISerializer);
-var
-  Visitor: TRttiVisitor;
-begin
-  Visitor.Initialize(ASerializer);
-  Visitor.Visit(Self);
-end;
+  Schema.Addressbook.Proto,
+  Schema.Message.Proto;
 
 { TOutputSerializerTest }
 
 procedure TOutputSerializerTest.Setup;
 begin
   FStream                         := TMemoryStream.Create;
-  FSerializer                     := TOutputSerializer.Create(FStream);
+  FSerializer                     := TOutputSerializer.Create;
+  FSerializer.Stream              := FStream;
   FSerializer['LimitMemoryUsage'] := True;
+  FVisitor.Initialize(FSerializer);
 end;
 
 procedure TOutputSerializerTest.TearDown;
@@ -69,13 +59,29 @@ var
   Addressbook: TAddressBook;
 begin
   Addressbook.FPeople := Addressbook.FPeople + [CPerson];
-  Addressbook.Serialize(FSerializer);
+  FVisitor.Visit(Addressbook);
   Assert.AreEqual<Int64>(22, FStream.Position);
   FStream.Position := 0;
-  Addressbook.Serialize(FSerializer); // test reusing the serializer
+  FVisitor.Visit(Addressbook); // test reusing the serializer
   Assert.AreEqual<Int64>(22, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('addressbook.data');
+end;
+
+procedure TOutputSerializerTest.TestSerializeMessage;
+const
+  CMessage: TMessageMessage = (FSelector: (FCase: MessageMessageOptional));
+var
+  Msg: TMessage;
+begin
+  Msg.FMessages := Msg.FMessages + [CMessage];
+  FVisitor.Visit(Msg);
+  Assert.AreEqual<Int64>(22, FStream.Position);
+  FStream.Position := 0;
+  FVisitor.Visit(Msg); // test reusing the serializer
+  Assert.AreEqual<Int64>(22, FStream.Position);
+  FStream.Position := 0;
+//  FStream.SaveToFile('message.data');
 end;
 
 initialization

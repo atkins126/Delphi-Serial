@@ -90,18 +90,7 @@
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="..\source\Delphi.Serial.RttiVisitor.pas"/>
         <DCCReference Include="..\source\Delphi.Serial.RttiObserver.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Protobuf.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Json.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Bson.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Xml.pas"/>
         <DCCReference Include="..\source\Delphi.Serial.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Yaml.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Toml.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Avro.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.MessagePack.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Thrift.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Sbe.pas"/>
-        <DCCReference Include="..\source\Delphi.Serial.Cbor.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.Reader.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.InputSerializer.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.OutputSerializer.pas"/>
@@ -109,6 +98,7 @@
         <DCCReference Include="..\source\Json\Delphi.Serial.Json.OutputSerializer.pas"/>
         <DCCReference Include="..\source\Json\Delphi.Serial.Json.InputSerializer.pas"/>
         <DCCReference Include="..\source\Protobuf\Delphi.Serial.Protobuf.Writer.pas"/>
+        <DCCReference Include="..\source\Delphi.Serial.Factory.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

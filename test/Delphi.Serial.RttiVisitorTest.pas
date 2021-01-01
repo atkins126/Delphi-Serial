@@ -7,7 +7,8 @@ interface
 uses
   DUnitX.TestFramework,
   Delphi.Mocks,
-  Delphi.Serial.RttiObserver;
+  Delphi.Serial.RttiObserver,
+  Delphi.Serial.RttiVisitor;
 
 type
 
@@ -173,17 +174,12 @@ type
     FInnerRec: TMyInnerRec;
   end;
 
-  TMyRecordHelper = record helper for TMyRecord
-    public
-      procedure Serialize(ASerializer: IRttiObserver); inline;
-  end;
-
   [TestFixture]
   TRttiVisitorTest = class
     private
-      FMyRecord  : TMyRecord;
       FSerializer: TMock<IRttiObserver>;
       FKeepEmpty : Boolean;
+      FVisitor   : TRttiVisitor;
 
     public
       [Setup]
@@ -198,31 +194,12 @@ type
 implementation
 
 uses
-  Delphi.Serial.RttiVisitor,
   System.Rtti;
-
-{ TMyRecordHelper }
-
-procedure TMyRecordHelper.Serialize(ASerializer: IRttiObserver);
-var
-  Visitor: TRttiVisitor;
-begin
-  Visitor.Initialize(ASerializer);
-  Visitor.Visit(Self);
-end;
 
 { TRttiVisitorTest }
 
 procedure TRttiVisitorTest.Setup;
 begin
-  FMyRecord := Default (TMyRecord);
-  with FMyRecord.FInnerRec do
-    begin
-      FUInt8Enum  := TUInt8Enum(- 1);
-      FUInt16Enum := TUInt16Enum(- 1);
-      FUInt32Enum := TUInt32Enum(- 1);
-    end;
-
   FSerializer := TMock<IRttiObserver>.Create;
   with FSerializer.Setup do
     begin
@@ -247,6 +224,7 @@ begin
     end;
 
   FKeepEmpty := False;
+  FVisitor.Initialize(FSerializer);
 end;
 
 procedure TRttiVisitorTest.TearDown;
@@ -255,7 +233,17 @@ begin
 end;
 
 procedure TRttiVisitorTest.TestVisit;
+var
+  MyRecord: TMyRecord;
 begin
+  MyRecord := Default (TMyRecord);
+  with MyRecord.FInnerRec do
+    begin
+      FUInt8Enum  := TUInt8Enum(- 1);
+      FUInt16Enum := TUInt16Enum(- 1);
+      FUInt32Enum := TUInt32Enum(- 1);
+    end;
+
   with FSerializer.Setup do
     begin
       Expect.Exactly(15).When.BeginRecord;
@@ -280,7 +268,9 @@ begin
       Expect.Exactly('Attribute', 2);
       Expect.Exactly('Value', 286);
     end;
-  FMyRecord.Serialize(FSerializer);
+
+  FVisitor.Visit(MyRecord);
+
   Assert.WillNotRaise(
     procedure
     begin

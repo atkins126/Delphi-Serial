@@ -94,22 +94,13 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="..\test\Delphi.Serial.RttiVisitorTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.ProtobufTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.JsonTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.BsonTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.XmlTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.YamlTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.TomlTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.AvroTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.MessagePackTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.ThriftTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.SbeTest.pas"/>
-        <DCCReference Include="..\test\Delphi.Serial.CborTest.pas"/>
         <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.TypesTest.pas"/>
         <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.ReaderWriterTest.pas"/>
         <DCCReference Include="..\test\Protobuf\Delphi.Serial.Protobuf.OutputSerializerTest.pas"/>
         <DCCReference Include="..\test\Json\Delphi.Serial.Json.OutputSerializerTest.pas"/>
         <DCCReference Include="..\test\generated\Schema.Addressbook.Proto.pas"/>
+        <DCCReference Include="..\test\generated\Schema.Message.Proto.pas"/>
+        <DCCReference Include="..\test\Delphi.Serial.FactoryTest.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

@@ -82,18 +82,20 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
-      function GetOption(const AName: string): Variant;
+      procedure SetStream(AStream: TStream);
       procedure SetOption(const AName: string; AValue: Variant);
 
     public
-      constructor Create(AStream: TStream);
+      constructor Create;
       destructor Destroy; override;
   end;
+
+  EJsonError = class(ESerialError);
 
 implementation
 
 uses
-  Delphi.Serial.Json,
+  Delphi.Serial.Factory,
   System.Json.Types,
   System.SysUtils,
   System.TypInfo;
@@ -112,9 +114,8 @@ end;
 
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TStream);
+constructor TOutputSerializer.Create;
 begin
-  FJsonWriter := TJsonTextWriter.Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
 end;
 
@@ -242,19 +243,6 @@ begin
     CurrentContext.FEnumName := AName;
 end;
 
-function TOutputSerializer.GetOption(const AName: string): Variant;
-begin
-  case TOutputOption.From(AName) of
-    TOutputOption.Indentation:
-      if FJsonWriter.Formatting = TJsonFormatting.Indented then
-        Result := FJsonWriter.Indentation
-      else
-        Result := - 1;
-    TOutputOption.UpperCaseEnums:
-      Result   := FUpperCaseEnums
-  end;
-end;
-
 procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
   case TOutputOption.From(AName) of
@@ -269,6 +257,12 @@ begin
     TOutputOption.UpperCaseEnums:
       FUpperCaseEnums          := AValue;
   end;
+end;
+
+procedure TOutputSerializer.SetStream(AStream: TStream);
+begin
+  FreeAndNil(FJsonWriter);
+  FJsonWriter := TJsonTextWriter.Create(AStream);
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
@@ -477,5 +471,9 @@ begin
         FJsonWriter.WriteValue(AValue);
       end;
 end;
+
+initialization
+
+TFactory.Instance.RegisterSerializer<TOutputSerializer>('Json_Output');
 
 end.

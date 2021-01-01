@@ -47,6 +47,7 @@ private:
     std::vector<Enumerator> GetEnumerators(const OneofDescriptor *desc);
     std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
+    std::string GetFieldOptions(const Field &field);
 
     std::map<std::string, std::string> _variables;
     std::set<std::string> _types;

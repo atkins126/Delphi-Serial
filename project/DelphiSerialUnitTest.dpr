@@ -15,22 +15,13 @@ uses
   {$ENDIF }
   DUnitX.TestFramework,
   Delphi.Serial.RttiVisitorTest in '..\test\Delphi.Serial.RttiVisitorTest.pas',
-  Delphi.Serial.ProtobufTest in '..\test\Delphi.Serial.ProtobufTest.pas',
-  Delphi.Serial.JsonTest in '..\test\Delphi.Serial.JsonTest.pas',
-  Delphi.Serial.BsonTest in '..\test\Delphi.Serial.BsonTest.pas',
-  Delphi.Serial.XmlTest in '..\test\Delphi.Serial.XmlTest.pas',
-  Delphi.Serial.YamlTest in '..\test\Delphi.Serial.YamlTest.pas',
-  Delphi.Serial.TomlTest in '..\test\Delphi.Serial.TomlTest.pas',
-  Delphi.Serial.AvroTest in '..\test\Delphi.Serial.AvroTest.pas',
-  Delphi.Serial.MessagePackTest in '..\test\Delphi.Serial.MessagePackTest.pas',
-  Delphi.Serial.ThriftTest in '..\test\Delphi.Serial.ThriftTest.pas',
-  Delphi.Serial.SbeTest in '..\test\Delphi.Serial.SbeTest.pas',
-  Delphi.Serial.CborTest in '..\test\Delphi.Serial.CborTest.pas',
   Delphi.Serial.Protobuf.TypesTest in '..\test\Protobuf\Delphi.Serial.Protobuf.TypesTest.pas',
   Delphi.Serial.Protobuf.ReaderWriterTest in '..\test\Protobuf\Delphi.Serial.Protobuf.ReaderWriterTest.pas',
   Delphi.Serial.Protobuf.OutputSerializerTest in '..\test\Protobuf\Delphi.Serial.Protobuf.OutputSerializerTest.pas',
   Delphi.Serial.Json.OutputSerializerTest in '..\test\Json\Delphi.Serial.Json.OutputSerializerTest.pas',
-  Schema.Addressbook.Proto in '..\test\generated\Schema.Addressbook.Proto.pas';
+  Schema.Addressbook.Proto in '..\test\generated\Schema.Addressbook.Proto.pas',
+  Schema.Message.Proto in '..\test\generated\Schema.Message.Proto.pas',
+  Delphi.Serial.FactoryTest in '..\test\Delphi.Serial.FactoryTest.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

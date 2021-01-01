@@ -1,0 +1,78 @@
+syntax = "proto2";
+
+enum Enum {
+    ENUM_VALUE0 = 0;
+    ENUM_VALUE2 = 2;
+}
+
+message Optional {
+    optional float float = 1;
+    optional bool bool = 2;
+    optional bytes bytes = 3;
+    optional sint32 sint32 = 4;
+    optional sint64 sint64 = 5;
+    optional fixed32 fixed32 = 6;
+    optional fixed64 fixed64 = 7;
+    optional sfixed32 sfixed32 = 8;
+    optional sfixed64 sfixed64 = 9;
+    optional string string = 10;
+    optional Enum enum = 11;
+}
+
+message Required {
+    required float float = 1;
+    required bool bool = 2;
+    required bytes bytes = 3;
+    required sint32 sint32 = 4;
+    required sint64 sint64 = 5;
+    required fixed32 fixed32 = 6;
+    required fixed64 fixed64 = 7;
+    required sfixed32 sfixed32 = 8;
+    required sfixed64 sfixed64 = 9;
+    required string string = 10;
+    required Enum enum = 11;
+}
+
+message Repeated {
+    repeated float float = 1  [packed=true];
+    repeated bool bool = 2  [packed=true];
+    repeated bytes bytes = 3;
+    repeated sint32 sint32 = 4  [packed=true];
+    repeated sint64 sint64 = 5  [packed=true];
+    repeated fixed32 fixed32 = 6  [packed=true];
+    repeated fixed64 fixed64 = 7  [packed=true];
+    repeated sfixed32 sfixed32 = 8  [packed=true];
+    repeated sfixed64 sfixed64 = 9  [packed=true];
+    repeated string string = 10;
+    repeated Enum enum = 11  [packed=true];
+}
+
+message UnPacked {
+    repeated float float = 1;
+    repeated bool bool = 2;
+    repeated sint32 sint32 = 4;
+    repeated sint64 sint64 = 5;
+    repeated fixed32 fixed32 = 6;
+    repeated fixed64 fixed64 = 7;
+    repeated sfixed32 sfixed32 = 8;
+    repeated sfixed64 sfixed64 = 9;
+    repeated Enum enum = 11;
+}
+
+message Message {
+    enum UnusedEnum {
+        ENUM_VALUE0 = 0;
+    }
+    message UnusedMessage {
+    }
+
+    message Message {
+        oneof Selector {
+            Optional optional = 1;
+            Required required = 2;
+            Repeated repeated = 3;
+            UnPacked unpacked = 4;
+        }
+    }
+    repeated Message messages = 1;
+}

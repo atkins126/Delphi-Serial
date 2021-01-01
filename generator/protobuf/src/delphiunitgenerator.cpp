@@ -30,10 +30,7 @@ void DelphiUnitGenerator::Print(const FileDescriptor *desc)
     _printer.Print(_variables, "interface\n\n");
     _printer.Print(_variables, "uses\n");
     _printer.Indent();
-    if (_emitJsonNames) {
-        _printer.Print(_variables, "Delphi.Serial,\n");
-    }
-    _printer.Print(_variables, "Delphi.Serial.Protobuf;\n\n");
+    _printer.Print(_variables, "Delphi.Serial;\n\n");
     _printer.Outdent();
     _printer.Print(_variables, "type\n\n");
     _printer.Indent();
@@ -78,6 +75,7 @@ std::string DelphiUnitGenerator::Print(const Descriptor *desc)
         }
         Print(field);
     }
+    Print(nullptr, oneof);
     _printer.Outdent();
     _printer.Print(_variables, "end;\n\n");
     return recordname;
@@ -120,21 +118,27 @@ void DelphiUnitGenerator::Print(const Enumerator &enumerator)
 
 void DelphiUnitGenerator::Print(const Field &field)
 {
-    std::string fieldoptions;
-    if (field.required) {
-        fieldoptions += ", Required";
-    }
-    if (field.packable && !field.packed) {
-        fieldoptions += ", UnPacked";
-    }
-    if (_emitJsonNames) {
-        fieldoptions += ", FieldName('" + field.json_name + "')";
-    }
+    const auto fieldoptions = GetFieldOptions(field);
     _variables["fieldname"] = GetFieldName(field.name);
     _variables["fieldtype"] = field.repeated ? GetArrayType(field.type) : field.type;
     _variables["fieldtag"] = std::to_string(field.tag);
     _variables["fieldoptions"] = fieldoptions;
     _printer.Print(_variables, "[FieldTag($fieldtag$)$fieldoptions$] $fieldname$: $fieldtype$;\n");
+}
+
+std::string DelphiUnitGenerator::GetFieldOptions(const DelphiUnitGenerator::Field &field)
+{
+    std::string result;
+    if (field.required) {
+        result += ", Required";
+    }
+    if (field.packable && !field.packed) {
+        result += ", UnPacked";
+    }
+    if (_emitJsonNames) {
+        result += ", FieldName('" + field.json_name + "')";
+    }
+    return result;
 }
 
 void DelphiUnitGenerator::Print(const OneofDescriptor *oneof, bool closePrevious)

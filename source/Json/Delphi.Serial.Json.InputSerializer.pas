@@ -51,25 +51,21 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
-      function GetOption(const AName: string): Variant;
+      procedure SetStream(AStream: TStream);
       procedure SetOption(const AName: string; AValue: Variant);
 
     public
-      constructor Create(AStream: TStream);
       destructor Destroy; override;
   end;
+
+  EJsonError = class(ESerialError);
 
 implementation
 
 uses
-  Delphi.Serial.Json;
+  Delphi.Serial.Factory;
 
 { TInputSerializer }
-
-constructor TInputSerializer.Create(AStream: TStream);
-begin
-  FStream := AStream;
-end;
 
 destructor TInputSerializer.Destroy;
 begin
@@ -142,14 +138,14 @@ begin
 
 end;
 
-function TInputSerializer.GetOption(const AName: string): Variant;
+procedure TInputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
   raise EJsonError.CreateFmt('The serializer has no option with this name: %s', [AName]);
 end;
 
-procedure TInputSerializer.SetOption(const AName: string; AValue: Variant);
+procedure TInputSerializer.SetStream(AStream: TStream);
 begin
-  raise EJsonError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+  FStream := AStream;
 end;
 
 function TInputSerializer.SkipAttributes: Boolean;
@@ -256,5 +252,9 @@ procedure TInputSerializer.Value(var AValue: Comp);
 begin
 
 end;
+
+initialization
+
+TFactory.Instance.RegisterSerializer<TInputSerializer>('Json_Input');
 
 end.

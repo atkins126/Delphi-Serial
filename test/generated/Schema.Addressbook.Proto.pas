@@ -5,8 +5,7 @@ unit Schema.Addressbook.Proto;
 interface
 
 uses
-  Delphi.Serial,
-  Delphi.Serial.Protobuf;
+  Delphi.Serial;
 
 type
 

@@ -6,7 +6,6 @@ interface
 
 uses
   Delphi.Serial.Protobuf.Writer,
-  Delphi.Serial.Protobuf,
   Delphi.Serial,
   System.Classes,
   System.SysUtils,
@@ -109,17 +108,20 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
-      function GetOption(const AName: string): Variant;
+      procedure SetStream(AStream: TStream);
       procedure SetOption(const AName: string; AValue: Variant);
 
     public
-      constructor Create(AStream: TCustomMemoryStream);
+      constructor Create;
       destructor Destroy; override;
   end;
+
+  EProtobufError = class(ESerialError);
 
 implementation
 
 uses
+  Delphi.Serial.Factory,
   Delphi.Serial.Protobuf.Types,
   System.TypInfo;
 
@@ -157,9 +159,8 @@ end;
 
 { TOutputSerializer }
 
-constructor TOutputSerializer.Create(AStream: TCustomMemoryStream);
+constructor TOutputSerializer.Create;
 begin
-  FWriter         := TProtobufWriter.Create(AStream);
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
   FFieldRecursion := - 1;
 end;
@@ -323,14 +324,6 @@ begin
   Assert(False); // should not be called
 end;
 
-function TOutputSerializer.GetOption(const AName: string): Variant;
-begin
-  case TOutputOption.From(AName) of
-    TOutputOption.LimitMemoryUsage:
-      Result := FLimitMemoryUsage;
-  end;
-end;
-
 function TOutputSerializer.SkipEnumNames: Boolean;
 begin
   Result := True;
@@ -343,7 +336,7 @@ begin
       Result := False
     else if FFieldTag = 0 then
       Result := True
-    else if FFieldRecursion <= 0 then
+    else if FFieldRecursion < 1 then
       Result := False
     else
       with PreviousContext^ do
@@ -362,6 +355,14 @@ begin
     TOutputOption.LimitMemoryUsage:
       FLimitMemoryUsage := AValue;
   end;
+end;
+
+procedure TOutputSerializer.SetStream(AStream: TStream);
+begin
+  if not (AStream is TCustomMemoryStream) then
+    raise EProtobufError.Create('The output stream must be a memory stream');
+  FreeAndNil(FWriter);
+  FWriter := TProtobufWriter.Create(AStream as TCustomMemoryStream);
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
@@ -389,7 +390,7 @@ begin
       FIsFixed  :=
         (AType.Handle = TypeInfo(Fixed32)) or (AType.Handle = TypeInfo(SFixed32)) or
         (AType.Handle = TypeInfo(Fixed64)) or (AType.Handle = TypeInfo(SFixed64));
-      if FIsArray then
+      if FIsArray then // we are handling the array element type
         begin
           FIsBytes       := AType.Handle = TypeInfo(TBytes);
           FIsPackedArray := (not FIsUnPacked) and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
@@ -470,12 +471,12 @@ end;
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
   with CurrentContext^ do
-    if FIsOneof then // this is the case field of a oneof record
-      with PreviousContext^ do
-        begin
-          Assert(FIsOneof);    // check that the containing record is marked as oneof
-          FOneofCase := AValue // use the context of the oneof record to keep the case value
-        end
+    if FIsOneof then // we are handling the case field of a oneof record
+      begin
+        if (FFieldRecursion < 1) or not PreviousContext.FIsOneof then
+          raise EProtobufError.Create('Oneof case fields must be part of a oneof record');
+        PreviousContext.FOneofCase := AValue // use the context of the oneof record to keep the case value
+      end
     else if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
@@ -487,12 +488,12 @@ end;
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
   with CurrentContext^ do
-    if FIsOneof then // this is the case field of a oneof record
-      with PreviousContext^ do
-        begin
-          Assert(FIsOneof);    // check that the containing record is marked as oneof
-          FOneofCase := AValue // use the context of the oneof record to keep the case value
-        end
+    if FIsOneof then // we are handling the case field of a oneof record
+      begin
+        if (FFieldRecursion < 1) or not PreviousContext.FIsOneof then
+          raise EProtobufError.Create('Oneof case fields must be part of a oneof record');
+        PreviousContext.FOneofCase := AValue // use the context of the oneof record to keep the case value
+      end
     else if (AValue <> 0) or FIsArray or FIsRequired then
       begin
         if not FIsPackedArray then
@@ -646,6 +647,7 @@ end;
 
 initialization
 
+TFactory.Instance.RegisterSerializer<TOutputSerializer>('Protobuf_Output');
 TOutputSerializer.FUTF8Encoding := TUTF8Encoding.Create;
 
 finalization

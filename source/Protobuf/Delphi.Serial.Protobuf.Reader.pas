@@ -3,7 +3,7 @@ unit Delphi.Serial.Protobuf.Reader;
 interface
 
 uses
-  Delphi.Serial.Protobuf,
+  Delphi.Serial,
   Delphi.Serial.Protobuf.Types,
   System.Classes;
 

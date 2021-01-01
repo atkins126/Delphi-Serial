@@ -54,25 +54,22 @@ type
       procedure EnumName(const AName: string);
       procedure Attribute(const AAttribute: TCustomAttribute);
 
-      function GetOption(const AName: string): Variant;
+      procedure SetStream(AStream: TStream);
       procedure SetOption(const AName: string; AValue: Variant);
 
     public
-      constructor Create(AStream: TCustomMemoryStream);
       destructor Destroy; override;
   end;
+
+  EProtobufError = class(ESerialError);
 
 implementation
 
 uses
-  Delphi.Serial.Protobuf;
+  Delphi.Serial.Factory,
+  System.SysUtils;
 
 { TInputSerializer }
-
-constructor TInputSerializer.Create(AStream: TCustomMemoryStream);
-begin
-  FReader := TProtobufReader.Create(AStream);
-end;
 
 destructor TInputSerializer.Destroy;
 begin
@@ -140,11 +137,6 @@ begin
 
 end;
 
-function TInputSerializer.GetOption(const AName: string): Variant;
-begin
-  raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
-end;
-
 function TInputSerializer.SkipEnumNames: Boolean;
 begin
   Result := True;
@@ -158,6 +150,14 @@ end;
 procedure TInputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
   raise EProtobufError.CreateFmt('The serializer has no option with this name: %s', [AName]);
+end;
+
+procedure TInputSerializer.SetStream(AStream: TStream);
+begin
+  if not (AStream is TCustomMemoryStream) then
+    raise EProtobufError.Create('The input stream must be a memory stream');
+  FreeAndNil(FReader);
+  FReader := TProtobufReader.Create(AStream as TCustomMemoryStream);
 end;
 
 function TInputSerializer.SkipAttributes: Boolean;
@@ -259,5 +259,9 @@ procedure TInputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
 
 end;
+
+initialization
+
+TFactory.Instance.RegisterSerializer<TInputSerializer>('Protobuf_Input');
 
 end.

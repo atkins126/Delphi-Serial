@@ -6,7 +6,7 @@ uses
   DUnitX.TestFramework,
   Delphi.Serial.Protobuf.Reader,
   Delphi.Serial.Protobuf.Writer,
-  Delphi.Serial.Protobuf,
+  Delphi.Serial,
   System.Classes;
 
 type

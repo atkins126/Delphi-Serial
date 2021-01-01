@@ -3,14 +3,32 @@ unit Delphi.Serial;
 interface
 
 uses
-  Delphi.Serial.RttiObserver;
+  System.Classes,
+  System.SysUtils,
+  Delphi.Serial.RttiObserver,
+  Delphi.Serial.RttiVisitor;
 
 type
+
+  FieldTag          = 1 .. $1FFFFFFF;
+  Float             = Single;
+  Bool              = Boolean;
+  Bytes             = TBytes;
+  SInt32            = type Int32;
+  SInt64            = type Int64;
+  Fixed32           = type UInt32;
+  Fixed64           = type UInt64;
+  SFixed32          = type Int32;
+  SFixed64          = type Int64;
+
+  ESerialError      = class(Exception);
 
   SerialAttribute   = class(TCustomAttribute);
   RecordAttribute   = class(SerialAttribute);
   FieldAttribute    = class(SerialAttribute);
   RequiredAttribute = class(FieldAttribute);
+  OneofAttribute    = class(FieldAttribute);
+  UnPackedAttribute = class(FieldAttribute);
 
   DefaultValueAttribute = class(FieldAttribute)
     private
@@ -28,28 +46,30 @@ type
       property Value: string read FValue;
   end;
 
+  FieldTagAttribute = class(FieldAttribute)
+    private
+      FValue: FieldTag;
+    public
+      constructor Create(AValue: FieldTag);
+      property Value: FieldTag read FValue;
+  end;
+
   ISerializer = interface(IRttiObserver)
-    function GetOption(const AName: string): Variant;
+    procedure SetStream(AStream: TStream);
     procedure SetOption(const AName: string; AValue: Variant);
-    property Option[const AName: string]: Variant read GetOption write SetOption; default;
+
+    property Stream: TStream write SetStream;
+    property Option[const AName: string]: Variant write SetOption; default;
   end;
 
-  TSerial = class
-    public
-      class procedure Serialize<T>(var AValue: T; ASerializer: ISerializer); static;
-  end;
+  TVisitor = TRttiVisitor;
 
-  { Template for record helpers for user-defined types
-
-  TMyTypeHelper = record helper for TMyType
-    public
-      procedure Serialize(ASerializer: ISerializer); inline;
-  end;}
+function CreateSerializer(const AName: string): ISerializer;
 
 implementation
 
 uses
-  Delphi.Serial.RttiVisitor;
+  Delphi.Serial.Factory;
 
 { DefaultValueAttribute }
 
@@ -65,21 +85,16 @@ begin
   FValue := AValue;
 end;
 
-{ TSerial }
+{ FieldTagAttribute }
 
-class procedure TSerial.Serialize<T>(var AValue: T; ASerializer: ISerializer);
-var
-  Visitor: TRttiVisitor;
+constructor FieldTagAttribute.Create(AValue: FieldTag);
 begin
-  Visitor.Initialize(ASerializer);
-  Visitor.Visit(AValue);
+  FValue := AValue;
 end;
 
-{ TMyTypeHelper }
-
-{procedure TMyTypeHelper.Serialize(ASerializer: ISerializer);
+function CreateSerializer(const AName: string): ISerializer;
 begin
-  TSerial.Serialize(Self, ASerializer);
-end;}
+  Result := TFactory.Instance.CreateSerializer(AName);
+end;
 
 end.

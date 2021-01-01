@@ -14,6 +14,7 @@ type
     private
       FStream    : TCustomMemoryStream;
       FSerializer: ISerializer;
+      FVisitor   : TVisitor;
 
     public
       [Setup]
@@ -29,33 +30,18 @@ implementation
 
 uses
   Delphi.Serial.Json.OutputSerializer,
-  Delphi.Serial.RttiVisitor,
   Schema.Addressbook.Proto;
-
-type
-  TAddressBookHelper = record helper for TAddressBook
-    public
-      procedure Serialize(ASerializer: ISerializer); inline;
-  end;
-
-{ TAddressBookHelper }
-
-procedure TAddressBookHelper.Serialize(ASerializer: ISerializer);
-var
-  Visitor: TRttiVisitor;
-begin
-  Visitor.Initialize(ASerializer);
-  Visitor.Visit(Self);
-end;
 
 { TOutputSerializerTest }
 
 procedure TOutputSerializerTest.Setup;
 begin
-  FStream     := TMemoryStream.Create;
-  FSerializer                   := TOutputSerializer.Create(FStream);
+  FStream                       := TMemoryStream.Create;
+  FSerializer                   := TOutputSerializer.Create;
+  FSerializer.Stream            := FStream;
   FSerializer['Indentation']    := 1;
   FSerializer['UpperCaseEnums'] := True;
+  FVisitor.Initialize(FSerializer);
 end;
 
 procedure TOutputSerializerTest.TearDown;
@@ -70,10 +56,10 @@ var
   Addressbook: TAddressBook;
 begin
   Addressbook.FPeople := Addressbook.FPeople + [CPerson];
-  Addressbook.Serialize(FSerializer);
+  FVisitor.Visit(Addressbook);
   Assert.AreEqual<Int64>(110, FStream.Position);
   FStream.Position := 0;
-  Addressbook.Serialize(FSerializer); // test reusing the serializer
+  FVisitor.Visit(Addressbook); // test reusing the serializer
   Assert.AreEqual<Int64>(110, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('addressbook.json');
