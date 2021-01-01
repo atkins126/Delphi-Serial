@@ -15,9 +15,18 @@ add_executable(protoc-gen-delphi
     src/delphiunitgenerator.cpp)
 
 add_executable(pbjson-addressbook
-    src/schema/main.cpp
+    src/schema/addressbook_main.cpp
     src/schema/addressbook.pb.h
-    src/schema/addressbook.pb.cc)
+    src/schema/addressbook.pb.cc
+    src/schema/pbjson.h
+    src/schema/pbjson.cpp)
+
+add_executable(pbjson-message
+    src/schema/message_main.cpp
+    src/schema/message.pb.h
+    src/schema/message.pb.cc
+    src/schema/pbjson.h
+    src/schema/pbjson.cpp)
 
 find_package(Protobuf REQUIRED)
 
@@ -29,5 +38,12 @@ target_link_libraries(pbjson-addressbook
     ${Protobuf_LIBRARIES}
     ${Protobuf_PROTOC_LIBRARIES})
 
+target_link_libraries(pbjson-message
+    ${Protobuf_LIBRARIES}
+    ${Protobuf_PROTOC_LIBRARIES})
+
 target_include_directories(pbjson-addressbook
+    PRIVATE "${CMAKE_SOURCE_DIR}/src")
+
+target_include_directories(pbjson-message
     PRIVATE "${CMAKE_SOURCE_DIR}/src")

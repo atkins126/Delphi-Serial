@@ -24,23 +24,26 @@ type
 
       [Test]
       procedure TestSerializeAddressBook;
+
+      [Test]
+      procedure TestSerializeMessage;
   end;
 
 implementation
 
 uses
   Delphi.Serial.Json.OutputSerializer,
-  Schema.Addressbook.Proto;
+  Schema.Addressbook.Proto,
+  Schema.Message.Proto;
 
 { TOutputSerializerTest }
 
 procedure TOutputSerializerTest.Setup;
 begin
-  FStream                       := TMemoryStream.Create;
-  FSerializer                   := TOutputSerializer.Create;
-  FSerializer.Stream            := FStream;
-  FSerializer['Indentation']    := 1;
-  FSerializer['UpperCaseEnums'] := True;
+  FStream                    := TMemoryStream.Create;
+  FSerializer                := TOutputSerializer.Create;
+  FSerializer.Stream         := FStream;
+  FSerializer['Indentation'] := 1;
   FVisitor.Initialize(FSerializer);
 end;
 
@@ -63,6 +66,28 @@ begin
   Assert.AreEqual<Int64>(110, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('addressbook.json');
+end;
+
+procedure TOutputSerializerTest.TestSerializeMessage;
+const
+  COptional: TOptional = (FFloat: 0.1);
+  CRequired: TRequired = (FFloat: 0.1);
+  CRepeated: TRepeated = (FFloat: [0.1]);
+  CUnPacked: TUnPacked = (FFloat: [0.1]);
+var
+  Msg: TMessage;
+begin
+  Msg.FOptional := Msg.FOptional + [COptional];
+  Msg.FRequired := Msg.FRequired + [CRequired];
+  Msg.FRepeated := Msg.FRepeated + [CRepeated];
+  Msg.FUnPacked := Msg.FUnPacked + [CUnPacked];
+  FVisitor.Visit(Msg);
+  Assert.AreEqual<Int64>(405, FStream.Position);
+  FStream.Position := 0;
+  FVisitor.Visit(Msg); // test reusing the serializer
+  Assert.AreEqual<Int64>(405, FStream.Position);
+  FStream.Position := 0;
+//  FStream.SaveToFile('message.json');
 end;
 
 initialization

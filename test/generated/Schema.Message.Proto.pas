@@ -10,9 +10,9 @@ uses
 type
 
   TEnum = (
-    EnumValue0 = 0,
+    Value0 = 0,
     _unused1 = 1,
-    EnumValue2 = 2
+    Value2 = 2
   );
 
   TOptional = record
@@ -69,23 +69,11 @@ type
     [FieldTag(11), UnPacked, FieldName('enum')] FEnum: TArray<TEnum>;
   end;
 
-  TMessageMessage = record
-    [Oneof] FSelector: record
-      [Oneof] FCase: (
-        MessageMessageOptional = 0,
-        MessageMessageRequired = 1,
-        MessageMessageRepeated = 2,
-        MessageMessageUnpacked = 3
-      );
-      [FieldTag(1), FieldName('optional')] FOptional: TOptional;
-      [FieldTag(2), FieldName('required')] FRequired: TRequired;
-      [FieldTag(3), FieldName('repeated')] FRepeated: TRepeated;
-      [FieldTag(4), FieldName('unpacked')] FUnpacked: TUnPacked;
-    end;
-  end;
-
   TMessage = record
-    [FieldTag(1), FieldName('messages')] FMessages: TArray<TMessageMessage>;
+    [FieldTag(1), FieldName('optional')] FOptional: TArray<TOptional>;
+    [FieldTag(2), FieldName('required')] FRequired: TArray<TRequired>;
+    [FieldTag(3), FieldName('repeated')] FRepeated: TArray<TRepeated>;
+    [FieldTag(4), FieldName('unpacked')] FUnpacked: TArray<TUnPacked>;
   end;
 
 implementation

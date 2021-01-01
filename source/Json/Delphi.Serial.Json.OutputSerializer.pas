@@ -17,17 +17,23 @@ type
     FIsRequired: Boolean;
     FIsRecord: Boolean;
     FIsArray: Boolean;
+    FIsBoolean: Boolean;
     FValueStarted: Boolean;
     FEnumName: string;
   end;
 
   PFieldContext = ^TFieldContext;
 
-  TOutputOption = (Indentation, UpperCaseEnums);
+  TOutputOption = (Indentation);
 
   TOutputOptionHelper = record helper for TOutputOption
     public
       class function From(const AName: string): TOutputOption; static;
+  end;
+
+  TJsonTextWriter = class(System.Json.Writers.TJsonTextWriter)
+    public
+      procedure WriteValue(AValue: Single); override; // override to adjust precision
   end;
 
   TOutputSerializer = class(TInterfacedObject, ISerializer)
@@ -39,9 +45,9 @@ type
       FFieldContexts : TArray<TFieldContext>;
       FFieldRecursion: Integer;
       FLastStarted   : Integer;
-      FUpperCaseEnums: Boolean;
 
       function CurrentContext: PFieldContext; inline;
+      procedure SetIndentation(AValue: Integer);
       procedure CheckStartValue;
 
       procedure Value(var AValue: Int8); overload;
@@ -180,7 +186,7 @@ end;
 
 procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
-  // ignore
+  CurrentContext.FIsBoolean := AType.Handle = TypeInfo(Boolean);
 end;
 
 procedure TOutputSerializer.EndAll;
@@ -191,8 +197,14 @@ end;
 procedure TOutputSerializer.EndDynamicArray;
 begin
   with CurrentContext^ do
-    if FIsArray and FValueStarted then
-      FJsonWriter.WriteEndArray;
+    if FIsArray then
+      if FValueStarted then
+        FJsonWriter.WriteEndArray
+      else if FIsRequired then
+        begin
+          CheckStartValue;
+          FJsonWriter.WriteEndArray;
+        end;
 end;
 
 procedure TOutputSerializer.EndField;
@@ -212,8 +224,14 @@ end;
 procedure TOutputSerializer.EndStaticArray;
 begin
   with CurrentContext^ do
-    if FIsArray and FValueStarted then
-      FJsonWriter.WriteEndArray;
+    if FIsArray then
+      if FValueStarted then
+        FJsonWriter.WriteEndArray
+      else if FIsRequired then
+        begin
+          CheckStartValue;
+          FJsonWriter.WriteEndArray;
+        end;
 end;
 
 procedure TOutputSerializer.CheckStartValue;
@@ -237,26 +255,26 @@ end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
 begin
-  if FUpperCaseEnums then
-    CurrentContext.FEnumName := AName.ToUpper
-  else
-    CurrentContext.FEnumName := AName;
+  CurrentContext.FEnumName := AName;
 end;
 
 procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
   case TOutputOption.From(AName) of
     TOutputOption.Indentation:
-      if AValue >= 0 then
-        begin
-          FJsonWriter.Formatting  := TJsonFormatting.Indented;
-          FJsonWriter.Indentation := AValue;
-        end
-      else
-        FJsonWriter.Formatting := TJsonFormatting.None;
-    TOutputOption.UpperCaseEnums:
-      FUpperCaseEnums          := AValue;
+      SetIndentation(AValue);
   end;
+end;
+
+procedure TOutputSerializer.SetIndentation(AValue: Integer);
+begin
+  if AValue >= 0 then
+    begin
+      FJsonWriter.Formatting  := TJsonFormatting.Indented;
+      FJsonWriter.Indentation := AValue;
+    end
+  else
+    FJsonWriter.Formatting := TJsonFormatting.None;
 end;
 
 procedure TOutputSerializer.SetStream(AStream: TStream);
@@ -328,6 +346,8 @@ begin
         CheckStartValue;
         if FEnumName.IsEmpty then
           FJsonWriter.WriteValue(AValue)
+        else if FIsBoolean then
+          FJsonWriter.WriteValue(FEnumName.ToBoolean)
         else
           FJsonWriter.WriteValue(FEnumName);
       end;
@@ -470,6 +490,32 @@ begin
         CheckStartValue;
         FJsonWriter.WriteValue(AValue);
       end;
+end;
+
+{ TJsonTextWriter }
+
+procedure TJsonTextWriter.WriteValue(AValue: Single);
+var
+  Str: string;
+begin
+  InternalWriteValue(TJsonToken.Float);
+
+  if AValue.IsPositiveInfinity then
+    Str := JsonPositiveInfinity
+  else if AValue.IsNegativeInfinity then
+    Str := JsonNegativeInfinity
+  else if AValue.IsNan then
+    Str := JsonNaN
+  else
+    Str := FloatToStrF(AValue, ffGeneral, 7, 0, FormatSettings);
+
+  if (FloatFormatHandling = TJsonFloatFormatHandling.Symbol) or not (AValue.IsInfinity or AValue.IsNan) then
+    // nothing
+  else if FloatFormatHandling = TJsonFloatFormatHandling.DefaultValue then
+    Str := '0.0'
+  else
+    Str := QuoteChar + Str + QuoteChar;
+  Writer.Write(Str);
 end;
 
 initialization

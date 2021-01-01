@@ -1,8 +1,8 @@
 syntax = "proto2";
 
 enum Enum {
-    ENUM_VALUE0 = 0;
-    ENUM_VALUE2 = 2;
+    VALUE0 = 0;
+    VALUE2 = 2;
 }
 
 message Optional {
@@ -60,19 +60,8 @@ message UnPacked {
 }
 
 message Message {
-    enum UnusedEnum {
-        ENUM_VALUE0 = 0;
-    }
-    message UnusedMessage {
-    }
-
-    message Message {
-        oneof Selector {
-            Optional optional = 1;
-            Required required = 2;
-            Repeated repeated = 3;
-            UnPacked unpacked = 4;
-        }
-    }
-    repeated Message messages = 1;
+    repeated Optional optional = 1;
+    repeated Required required = 2;
+    repeated Repeated repeated = 3;
+    repeated UnPacked unpacked = 4;
 }

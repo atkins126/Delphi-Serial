@@ -25,7 +25,7 @@ type
       [Test]
       procedure TestSerializeAddressBook;
 
-      [Test(False)]
+      [Test]
       procedure TestSerializeMessage;
   end;
 
@@ -70,16 +70,22 @@ end;
 
 procedure TOutputSerializerTest.TestSerializeMessage;
 const
-  CMessage: TMessageMessage = (FSelector: (FCase: MessageMessageOptional));
+  COptional: TOptional = (FFloat: 0.1);
+  CRequired: TRequired = (FFloat: 0.1);
+  CRepeated: TRepeated = (FFloat: [0.1]);
+  CUnPacked: TUnPacked = (FFloat: [0.1]);
 var
   Msg: TMessage;
 begin
-  Msg.FMessages := Msg.FMessages + [CMessage];
+  Msg.FOptional := Msg.FOptional + [COptional];
+  Msg.FRequired := Msg.FRequired + [CRequired];
+  Msg.FRepeated := Msg.FRepeated + [CRepeated];
+  Msg.FUnPacked := Msg.FUnPacked + [CUnPacked];
   FVisitor.Visit(Msg);
-  Assert.AreEqual<Int64>(22, FStream.Position);
+  Assert.AreEqual<Int64>(68, FStream.Position);
   FStream.Position := 0;
   FVisitor.Visit(Msg); // test reusing the serializer
-  Assert.AreEqual<Int64>(22, FStream.Position);
+  Assert.AreEqual<Int64>(68, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('message.data');
 end;

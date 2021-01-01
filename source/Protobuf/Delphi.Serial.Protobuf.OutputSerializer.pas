@@ -390,7 +390,14 @@ begin
       FIsFixed  :=
         (AType.Handle = TypeInfo(Fixed32)) or (AType.Handle = TypeInfo(SFixed32)) or
         (AType.Handle = TypeInfo(Fixed64)) or (AType.Handle = TypeInfo(SFixed64));
-      if FIsArray then // we are handling the array element type
+      if not FIsArray then
+        FIsBytes := AType.Handle = TypeInfo(TBytes)
+      else if FIsBytes and FIsRequired and (FArrayLength = 0) then
+        begin
+          FWriter.Pack(TWireType.LengthPrefixed, FFieldTag);
+          FWriter.Pack(VarInt(0));
+        end
+      else
         begin
           FIsBytes       := AType.Handle = TypeInfo(TBytes);
           FIsPackedArray := (not FIsUnPacked) and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
