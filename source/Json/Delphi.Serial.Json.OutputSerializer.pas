@@ -18,6 +18,7 @@ type
     FIsRecord: Boolean;
     FIsArray: Boolean;
     FIsBoolean: Boolean;
+    FIsByte: Boolean;
     FValueStarted: Boolean;
     FEnumName: string;
   end;
@@ -49,6 +50,7 @@ type
       function CurrentContext: PFieldContext; inline;
       procedure SetIndentation(AValue: Integer);
       procedure CheckStartValue;
+      procedure CheckEndArray;
 
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -186,7 +188,11 @@ end;
 
 procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
-  CurrentContext.FIsBoolean := AType.Handle = TypeInfo(Boolean);
+  with CurrentContext^ do
+    begin
+      FIsBoolean := AType.Handle = TypeInfo(Boolean);
+      FIsByte    := AType.Handle = TypeInfo(Byte);
+    end;
 end;
 
 procedure TOutputSerializer.EndAll;
@@ -196,15 +202,22 @@ end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
+  CheckEndArray;
+end;
+
+procedure TOutputSerializer.CheckEndArray;
+begin
   with CurrentContext^ do
-    if FIsArray then
-      if FValueStarted then
-        FJsonWriter.WriteEndArray
-      else if FIsRequired then
-        begin
-          CheckStartValue;
+    if FValueStarted and not FIsByte then
+      FJsonWriter.WriteEndArray
+    else if FIsRequired then
+      begin
+        CheckStartValue;
+        if FIsByte then
+          FJsonWriter.WriteValue([])
+        else
           FJsonWriter.WriteEndArray;
-        end;
+      end;
 end;
 
 procedure TOutputSerializer.EndField;
@@ -224,15 +237,7 @@ end;
 
 procedure TOutputSerializer.EndStaticArray;
 begin
-  with CurrentContext^ do
-    if FIsArray then
-      if FValueStarted then
-        FJsonWriter.WriteEndArray
-      else if FIsRequired then
-        begin
-          CheckStartValue;
-          FJsonWriter.WriteEndArray;
-        end;
+  CheckEndArray;
 end;
 
 procedure TOutputSerializer.CheckStartValue;
@@ -245,7 +250,7 @@ begin
             FValueStarted := True;
             if not FFieldName.IsEmpty then
               FJsonWriter.WritePropertyName(FFieldName);
-            if FIsArray then
+            if FIsArray and not FIsByte then
               FJsonWriter.WriteStartArray;
             if FIsRecord then
               FJsonWriter.WriteStartObject
