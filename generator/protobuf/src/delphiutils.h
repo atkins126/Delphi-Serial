@@ -63,4 +63,13 @@ inline std::string GetArrayType(const std::string &name)
     return "TArray<" + name + ">";
 }
 
+inline std::string GetBytesLiteral(const std::string &value)
+{
+    std::string result;
+    for (unsigned char ch : value) {
+        result += "#" + std::to_string(ch);
+    }
+    return result;
+}
+
 #endif // DELPHIUTILS_H

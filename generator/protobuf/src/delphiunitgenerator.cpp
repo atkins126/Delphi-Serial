@@ -70,9 +70,10 @@ std::string DelphiUnitGenerator::Print(const Descriptor *desc)
     _printer.Indent();
     const OneofDescriptor *oneof = nullptr;
     for (const auto &field : fields) {
-        if (field.oneof != oneof) {
-            Print(field.oneof, oneof);
-            oneof = field.oneof;
+        const auto containingOneof = field.desc->containing_oneof();
+        if (containingOneof != oneof) {
+            Print(containingOneof, oneof);
+            oneof = containingOneof;
         }
         Print(field);
     }
@@ -136,25 +137,28 @@ void DelphiUnitGenerator::Print(const EnumValue &value)
 
 void DelphiUnitGenerator::Print(const Field &field)
 {
-    const auto fieldoptions = GetFieldOptions(field);
-    _variables["fieldname"] = GetFieldName(field.name);
-    _variables["fieldtype"] = field.repeated ? GetArrayType(field.type) : field.type;
-    _variables["fieldtag"] = std::to_string(field.tag);
+    const auto fieldoptions = GetFieldOptions(field.desc);
+    _variables["fieldname"] = GetFieldName(field.desc->name());
+    _variables["fieldtype"] = field.desc->is_repeated() ? GetArrayType(field.type) : field.type;
+    _variables["fieldtag"] = std::to_string(field.desc->number());
     _variables["fieldoptions"] = fieldoptions;
-    _printer.Print(_variables, "[FieldTag($fieldtag$)$fieldoptions$] $fieldname$: $fieldtype$;\n");
+    _printer.Print(_variables, "[Tag($fieldtag$)$fieldoptions$] $fieldname$: $fieldtype$;\n");
 }
 
-std::string DelphiUnitGenerator::GetFieldOptions(const DelphiUnitGenerator::Field &field)
+std::string DelphiUnitGenerator::GetFieldOptions(const FieldDescriptor *desc)
 {
     std::string result;
-    if (field.required) {
+    if (desc->is_required()) {
         result += ", Required";
     }
-    if (field.packable && !field.packed) {
+    if (desc->is_packable() && !desc->is_packed()) {
         result += ", UnPacked";
     }
+    if (desc->has_default_value()) {
+        result += ", Default(" + GetFieldDefault(desc) + ")";
+    }
     if (_emitJsonNames) {
-        result += ", FieldName('" + field.json_name + "')";
+        result += ", Name('" + desc->json_name() + "')";
     }
     return result;
 }
@@ -214,15 +218,7 @@ auto DelphiUnitGenerator::GetFields(const Descriptor *desc) -> std::vector<Field
     result.reserve(desc->field_count());
     for (int i = 0; i < desc->field_count(); ++i) {
         const auto field = desc->field(i);
-        result.push_back({field->name(),
-                          field->json_name(),
-                          GetFieldType(field),
-                          field->is_required(),
-                          field->is_repeated(),
-                          field->is_packable(),
-                          field->is_packed(),
-                          field->number(),
-                          field->containing_oneof()});
+        result.push_back({GetFieldType(field), field});
     }
     return result;
 }
@@ -237,5 +233,39 @@ std::string DelphiUnitGenerator::GetFieldType(const FieldDescriptor *desc)
         return Print(desc->message_type());
     default:
         return desc->type_name();
+    }
+}
+
+std::string DelphiUnitGenerator::GetFieldDefault(const FieldDescriptor *desc)
+{
+    switch (desc->type()) {
+    case FieldDescriptor::TYPE_INT32:
+    case FieldDescriptor::TYPE_SINT32:
+    case FieldDescriptor::TYPE_SFIXED32:
+        return std::to_string(desc->default_value_int32());
+    case FieldDescriptor::TYPE_INT64:
+    case FieldDescriptor::TYPE_SINT64:
+    case FieldDescriptor::TYPE_SFIXED64:
+        return std::to_string(desc->default_value_int64());
+    case FieldDescriptor::TYPE_UINT32:
+    case FieldDescriptor::TYPE_FIXED32:
+        return std::to_string(desc->default_value_uint32());
+    case FieldDescriptor::TYPE_UINT64:
+    case FieldDescriptor::TYPE_FIXED64:
+        return std::to_string(desc->default_value_uint64());
+    case FieldDescriptor::TYPE_FLOAT:
+        return std::to_string(desc->default_value_float());
+    case FieldDescriptor::TYPE_DOUBLE:
+        return std::to_string(desc->default_value_double());
+    case FieldDescriptor::TYPE_BOOL:
+        return desc->default_value_bool() ? "true" : "false";
+    case FieldDescriptor::TYPE_ENUM:
+        return std::to_string(desc->default_value_enum()->number());
+    case FieldDescriptor::TYPE_STRING:
+        return "'" + desc->default_value_string() + "'";
+    case FieldDescriptor::TYPE_BYTES:
+        return GetBytesLiteral(desc->default_value_string());
+    default:
+        return "";
     }
 }

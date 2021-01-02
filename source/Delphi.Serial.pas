@@ -30,15 +30,7 @@ type
   OneofAttribute    = class(FieldAttribute);
   UnPackedAttribute = class(FieldAttribute);
 
-  DefaultValueAttribute = class(FieldAttribute)
-    private
-      FValue: Variant;
-    public
-      constructor Create(AValue: Variant);
-      property Value: Variant read FValue;
-  end;
-
-  FieldNameAttribute = class(FieldAttribute)
+  NameAttribute = class(FieldAttribute)
     private
       FValue: string;
     public
@@ -46,12 +38,24 @@ type
       property Value: string read FValue;
   end;
 
-  FieldTagAttribute = class(FieldAttribute)
+  TagAttribute = class(FieldAttribute)
     private
       FValue: FieldTag;
     public
       constructor Create(AValue: FieldTag);
       property Value: FieldTag read FValue;
+  end;
+
+  DefaultAttribute = class(FieldAttribute)
+    private
+      FValue: Variant;
+    public
+      constructor Create(AValue: Int64); overload;
+      constructor Create(AValue: UInt64); overload;
+      constructor Create(AValue: Boolean); overload;
+      constructor Create(AValue: Extended); overload;
+      constructor Create(const AValue: string); overload;
+      property Value: Variant read FValue;
   end;
 
   ISerializer = interface(IRttiObserver)
@@ -71,23 +75,43 @@ implementation
 uses
   Delphi.Serial.Factory;
 
-{ DefaultValueAttribute }
+{ NameAttribute }
 
-constructor DefaultValueAttribute.Create(AValue: Variant);
+constructor NameAttribute.Create(const AValue: string);
 begin
   FValue := AValue;
 end;
 
-{ FieldNameAttribute }
+{ TagAttribute }
 
-constructor FieldNameAttribute.Create(const AValue: string);
+constructor TagAttribute.Create(AValue: FieldTag);
 begin
   FValue := AValue;
 end;
 
-{ FieldTagAttribute }
+{ DefaultAttribute }
 
-constructor FieldTagAttribute.Create(AValue: FieldTag);
+constructor DefaultAttribute.Create(AValue: Int64);
+begin
+  FValue := AValue;
+end;
+
+constructor DefaultAttribute.Create(AValue: UInt64);
+begin
+  FValue := AValue;
+end;
+
+constructor DefaultAttribute.Create(AValue: Boolean);
+begin
+  FValue := AValue;
+end;
+
+constructor DefaultAttribute.Create(AValue: Extended);
+begin
+  FValue := AValue;
+end;
+
+constructor DefaultAttribute.Create(const AValue: string);
 begin
   FValue := AValue;
 end;

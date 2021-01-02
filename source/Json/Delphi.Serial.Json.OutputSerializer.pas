@@ -145,8 +145,8 @@ begin
         raise EJsonError.CreateFmt('Only fields can be marked with this attribute: %s', [AAttribute.ClassName]);
       with CurrentContext^ do
         begin
-          if AAttribute is FieldNameAttribute then
-            FFieldName  := (AAttribute as FieldNameAttribute).Value
+          if AAttribute is NameAttribute then
+            FFieldName  := (AAttribute as NameAttribute).Value
           else if AAttribute is RequiredAttribute then
             FIsRequired := True;
         end;
@@ -211,7 +211,8 @@ procedure TOutputSerializer.EndField;
 begin
   Assert(FFieldRecursion > 0);
   Dec(FFieldRecursion);
-  FLastStarted := FFieldRecursion;
+  if FLastStarted > FFieldRecursion then
+    FLastStarted := FFieldRecursion;
 end;
 
 procedure TOutputSerializer.EndRecord;

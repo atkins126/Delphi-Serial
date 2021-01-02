@@ -6,62 +6,102 @@ enum Enum {
 }
 
 message Optional {
-    optional float float = 1;
-    optional bool bool = 2;
-    optional bytes bytes = 3;
-    optional sint32 sint32 = 4;
-    optional sint64 sint64 = 5;
-    optional fixed32 fixed32 = 6;
-    optional fixed64 fixed64 = 7;
-    optional sfixed32 sfixed32 = 8;
-    optional sfixed64 sfixed64 = 9;
-    optional string string = 10;
-    optional Enum enum = 11;
+    optional double double = 1;
+    optional float float = 2;
+    optional int32 int32 = 3;
+    optional int64 int64 = 4;
+    optional uint32 uint32 = 5;
+    optional uint64 uint64 = 6;
+    optional sint32 sint32 = 7;
+    optional sint64 sint64 = 8;
+    optional fixed32 fixed32 = 9;
+    optional fixed64 fixed64 = 10;
+    optional sfixed32 sfixed32 = 11;
+    optional sfixed64 sfixed64 = 12;
+    optional bool bool = 13;
+    optional string string = 14;
+    optional bytes bytes = 15;
+    optional Enum enum = 16;
+}
+
+message Default {
+    optional double double = 1 [default = 1.0];
+    optional float float = 2 [default = 1.0];
+    optional int32 int32 = 3 [default = 1];
+    optional int64 int64 = 4 [default = 1];
+    optional uint32 uint32 = 5 [default = 1];
+    optional uint64 uint64 = 6 [default = 1];
+    optional sint32 sint32 = 7 [default = 1];
+    optional sint64 sint64 = 8 [default = 1];
+    optional fixed32 fixed32 = 9 [default = 1];
+    optional fixed64 fixed64 = 10 [default = 1];
+    optional sfixed32 sfixed32 = 11 [default = 1];
+    optional sfixed64 sfixed64 = 12 [default = 1];
+    optional bool bool = 13 [default = true];
+    optional string string = 14 [default = "a"];
+    optional bytes bytes = 15 [default = "\xAB\xE"];
+    optional Enum enum = 16 [default = VALUE2];
 }
 
 message Required {
-    required float float = 1;
-    required bool bool = 2;
-    required bytes bytes = 3;
-    required sint32 sint32 = 4;
-    required sint64 sint64 = 5;
-    required fixed32 fixed32 = 6;
-    required fixed64 fixed64 = 7;
-    required sfixed32 sfixed32 = 8;
-    required sfixed64 sfixed64 = 9;
-    required string string = 10;
-    required Enum enum = 11;
+    required double double = 1;
+    required float float = 2;
+    required int32 int32 = 3;
+    required int64 int64 = 4;
+    required uint32 uint32 = 5;
+    required uint64 uint64 = 6;
+    required sint32 sint32 = 7;
+    required sint64 sint64 = 8;
+    required fixed32 fixed32 = 9;
+    required fixed64 fixed64 = 10;
+    required sfixed32 sfixed32 = 11;
+    required sfixed64 sfixed64 = 12;
+    required bool bool = 13;
+    required string string = 14;
+    required bytes bytes = 15;
+    required Enum enum = 16;
 }
 
 message Repeated {
-    repeated float float = 1  [packed=true];
-    repeated bool bool = 2  [packed=true];
-    repeated bytes bytes = 3;
-    repeated sint32 sint32 = 4  [packed=true];
-    repeated sint64 sint64 = 5  [packed=true];
-    repeated fixed32 fixed32 = 6  [packed=true];
-    repeated fixed64 fixed64 = 7  [packed=true];
-    repeated sfixed32 sfixed32 = 8  [packed=true];
-    repeated sfixed64 sfixed64 = 9  [packed=true];
-    repeated string string = 10;
-    repeated Enum enum = 11  [packed=true];
+    repeated double double = 1 [packed = true];
+    repeated float float = 2 [packed = true];
+    repeated int32 int32 = 3 [packed = true];
+    repeated int64 int64 = 4 [packed = true];
+    repeated uint32 uint32 = 5 [packed = true];
+    repeated uint64 uint64 = 6 [packed = true];
+    repeated sint32 sint32 = 7 [packed = true];
+    repeated sint64 sint64 = 8 [packed = true];
+    repeated fixed32 fixed32 = 9 [packed = true];
+    repeated fixed64 fixed64 = 10 [packed = true];
+    repeated sfixed32 sfixed32 = 11 [packed = true];
+    repeated sfixed64 sfixed64 = 12 [packed = true];
+    repeated bool bool = 13 [packed = true];
+    repeated string string = 14;
+    repeated bytes bytes = 15;
+    repeated Enum enum = 16 [packed = true];
 }
 
 message UnPacked {
-    repeated float float = 1;
-    repeated bool bool = 2;
-    repeated sint32 sint32 = 4;
-    repeated sint64 sint64 = 5;
-    repeated fixed32 fixed32 = 6;
-    repeated fixed64 fixed64 = 7;
-    repeated sfixed32 sfixed32 = 8;
-    repeated sfixed64 sfixed64 = 9;
-    repeated Enum enum = 11;
+    repeated double double = 1;
+    repeated float float = 2;
+    repeated int32 int32 = 3;
+    repeated int64 int64 = 4;
+    repeated uint32 uint32 = 5;
+    repeated uint64 uint64 = 6;
+    repeated sint32 sint32 = 7;
+    repeated sint64 sint64 = 8;
+    repeated fixed32 fixed32 = 9;
+    repeated fixed64 fixed64 = 10;
+    repeated sfixed32 sfixed32 = 11;
+    repeated sfixed64 sfixed64 = 12;
+    repeated bool bool = 13;
+    repeated Enum enum = 16;
 }
 
 message Message {
     repeated Optional optional = 1;
-    repeated Required required = 2;
-    repeated Repeated repeated = 3;
-    repeated UnPacked unpacked = 4;
+    repeated Default default = 2;
+    repeated Required required = 3;
+    repeated Repeated repeated = 4;
+    repeated UnPacked unpacked = 5;
 }

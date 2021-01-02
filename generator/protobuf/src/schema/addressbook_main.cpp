@@ -10,7 +10,7 @@ int print_usage()
 
 int main(int argc, char **argv)
 {
-    tutorial::AddressBook addressbook;
+    AddressBook addressbook;
     try {
         if (argc < 3) {
             return print_usage();

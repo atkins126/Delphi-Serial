@@ -19,15 +19,8 @@ public:
 private:
     struct Field
     {
-        std::string name;
-        std::string json_name;
         std::string type;
-        bool required;
-        bool repeated;
-        bool packable;
-        bool packed;
-        int tag;
-        const OneofDescriptor *oneof;
+        const FieldDescriptor *desc;
     };
     struct EnumValue
     {
@@ -54,7 +47,8 @@ private:
     std::vector<EnumValue> GetEnumValues(const OneofDescriptor *desc);
     std::vector<Field> GetFields(const Descriptor *desc);
     std::string GetFieldType(const FieldDescriptor *desc);
-    std::string GetFieldOptions(const Field &field);
+    std::string GetFieldOptions(const FieldDescriptor *desc);
+    static std::string GetFieldDefault(const FieldDescriptor *desc);
 
     std::map<std::string, std::string> _variables;
     std::set<std::string> _types;

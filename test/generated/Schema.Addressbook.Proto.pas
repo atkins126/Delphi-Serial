@@ -16,25 +16,25 @@ type
   );
 
   TPersonPhoneNumber = record
-    [FieldTag(1), FieldName('number')] FNumber: string;
-    [FieldTag(2), FieldName('type')] FType: TPersonPhoneType;
+    [Tag(1), Name('number')] FNumber: string;
+    [Tag(2), Name('type')] FType: TPersonPhoneType;
   end;
 
   TGoogleProtobufTimestamp = record
-    [FieldTag(1), FieldName('seconds')] FSeconds: int64;
-    [FieldTag(2), FieldName('nanos')] FNanos: int32;
+    [Tag(1), Name('seconds')] FSeconds: int64;
+    [Tag(2), Name('nanos')] FNanos: int32;
   end;
 
   TPerson = record
-    [FieldTag(1), FieldName('name')] FName: string;
-    [FieldTag(2), FieldName('id')] FId: int32;
-    [FieldTag(3), FieldName('email')] FEmail: string;
-    [FieldTag(4), FieldName('phones')] FPhones: TArray<TPersonPhoneNumber>;
-    [FieldTag(5), FieldName('lastUpdated')] FLastUpdated: TGoogleProtobufTimestamp;
+    [Tag(1), Name('name')] FName: string;
+    [Tag(2), Name('id')] FId: int32;
+    [Tag(3), Name('email')] FEmail: string;
+    [Tag(4), Name('phones')] FPhones: TArray<TPersonPhoneNumber>;
+    [Tag(5), Name('lastUpdated')] FLastUpdated: TGoogleProtobufTimestamp;
   end;
 
   TAddressBook = record
-    [FieldTag(1), FieldName('people')] FPeople: TArray<TPerson>;
+    [Tag(1), Name('people')] FPeople: TArray<TPerson>;
   end;
 
 implementation

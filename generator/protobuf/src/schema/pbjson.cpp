@@ -9,7 +9,7 @@ int convert_binary_to_json(google::protobuf::Message &message,
                            const char *inputPath,
                            const char *outputPath)
 {
-    std::ifstream istream(inputPath);
+    std::ifstream istream(inputPath, std::ios::binary);
     if (!message.ParseFromIstream(&istream)) {
         GOOGLE_LOG(ERROR) << "Could not parse the input file: " << inputPath;
         return -1;
@@ -36,7 +36,7 @@ int convert_json_to_binary(google::protobuf::Message &message,
     options.case_insensitive_enum_parsing = true;
     const auto status = google::protobuf::util::JsonStringToMessage(json, &message, options);
     if (status.ok()) {
-        std::ofstream ostream(outputPath);
+        std::ofstream ostream(outputPath, std::ios::binary);
         if (!message.SerializeToOstream(&ostream)) {
             GOOGLE_LOG(ERROR) << "Could not write to the output file: " << outputPath;
             return -1;

@@ -191,8 +191,8 @@ begin
         raise EProtobufError.CreateFmt('Only fields can be marked with this attribute: %s', [AAttribute.ClassName]);
       with CurrentContext^ do
         begin
-          if AAttribute is FieldTagAttribute then
-            FFieldTag   := (AAttribute as FieldTagAttribute).Value
+          if AAttribute is TagAttribute then
+            FFieldTag   := (AAttribute as TagAttribute).Value
           else if AAttribute is RequiredAttribute then
             FIsRequired := True
           else if AAttribute is UnPackedAttribute then
@@ -280,7 +280,7 @@ begin
     begin
       WrittenCount := FWriter.Skip(0) - FStartPos;
       Assert(WrittenCount >= 0);
-      if WrittenCount > 0 then
+      if (WrittenCount > 0) or FIsArray or FIsRequired then
         PackLengthPrefix(WrittenCount)
       else
         FWriter.Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
@@ -295,8 +295,7 @@ begin
   LengthPrefix := VarInt(WrittenCount);
   PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
   FWriter.Skip(- WrittenCount);
-  if PrefixDiff <> 0 then
-    FWriter.Move(WrittenCount, PrefixDiff); // move memory by a few bytes to fit the length prefix
+  FWriter.Move(WrittenCount, PrefixDiff); // move memory by a few bytes to fit the length prefix
   FWriter.Skip(- CLengthPrefixReservedSize);
   FWriter.Pack(LengthPrefix);
   FWriter.Skip(WrittenCount);

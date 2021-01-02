@@ -16,8 +16,8 @@ type
     public
       constructor Create(AStream: TCustomMemoryStream);
 
-      procedure Move(ACount, ADisplacement: Integer); inline;
       procedure Truncate; inline;
+      procedure Move(ACount, ADisplacement: Integer);
       function Require(ACount: Integer): Pointer;
       function Skip(ACount: Integer): Int64; inline;
       function Write(const AValue; ACount: Integer): Integer; inline;
@@ -42,8 +42,11 @@ procedure TWriter.Move(ACount, ADisplacement: Integer);
 var
   Start: PByte;
 begin
-  Start := Require(ACount + ADisplacement);
-  System.Move(Start^, (Start + ADisplacement)^, ACount);
+  if (ACount > 0) and (ADisplacement <> 0) then
+    begin
+      Start := Require(ACount + ADisplacement);
+      System.Move(Start^, (Start + ADisplacement)^, ACount);
+    end;
 end;
 
 function TWriter.Require(ACount: Integer): Pointer;
@@ -54,7 +57,7 @@ begin
   CurrentPos     := FStream.Position;
   RequiredSize   := CurrentPos + ACount;
   if FStream.Size < RequiredSize then
-    FStream.Size := RequiredSize; // increase stream size to hold the required data
+    FStream.Size := RequiredSize; // increase stream size to hold the required data (this may change the position)
   Result         := PByte(FStream.Memory) + CurrentPos;
 end;
 
