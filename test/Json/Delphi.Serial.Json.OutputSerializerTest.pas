@@ -70,10 +70,10 @@ end;
 
 procedure TOutputSerializerTest.TestSerializeMessage;
 const
-  COptional: TOptional = (FFloat: 0.1; FBytes: [1, 2]);
-  CDefault: TDefault   = (FFloat: 0.1; FBytes: [1]);
+  COptional: TOptional = (FFloat: 0.1; FBytes: [1]);
+  CDefault: TDefault   = (FFloat: 0.1);
   CRequired: TRequired = (FFloat: 0);
-  CRepeated: TRepeated = (FFloat: [0.1]);
+  CRepeated: TRepeated = (FFloat: [0.1]; FBytes: [[]]);
   CUnPacked: TUnPacked = (FFloat: [0.1]);
 var
   Msg: TMessage;
@@ -84,10 +84,10 @@ begin
   Msg.FRepeated := Msg.FRepeated + [CRepeated];
   Msg.FUnPacked := Msg.FUnPacked + [CUnPacked];
   FVisitor.Visit(Msg);
-  Assert.AreEqual<Int64>(575, FStream.Position);
+  Assert.AreEqual<Int64>(584, FStream.Position);
   FStream.Position := 0;
   FVisitor.Visit(Msg); // test reusing the serializer
-  Assert.AreEqual<Int64>(575, FStream.Position);
+  Assert.AreEqual<Int64>(584, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('message.json');
 end;

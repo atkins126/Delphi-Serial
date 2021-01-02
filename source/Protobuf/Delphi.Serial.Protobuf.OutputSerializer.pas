@@ -30,6 +30,7 @@ type
     FIsOneof: Boolean;
     FOneofCase: Integer;
     FOneofFieldIndex: Integer;
+    FIsArrayOfBytes: Boolean;
     procedure Initialize(const AName: string);
   end;
 
@@ -72,6 +73,8 @@ type
       procedure Utf8Value(AChars: PChar; ACharCount: Integer);
       procedure CheckBeginPackedArray;
       procedure CheckEndPackedArray;
+      procedure CheckBeginArray(ALength: Integer);
+      procedure CheckPackEmptyBytes;
 
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -232,6 +235,11 @@ end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
+  CheckBeginArray(ALength);
+end;
+
+procedure TOutputSerializer.CheckBeginArray(ALength: Integer);
+begin
   with CurrentContext^ do
     begin
       if not FIsArray then
@@ -239,7 +247,12 @@ begin
           FIsArray     := True;
           FArrayLength := ALength;
         end
-      else if not FIsBytes then
+      else if FIsBytes then
+        begin
+          FIsArrayOfBytes := True;
+          FArrayLength    := ALength;
+        end
+      else
         raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
     end;
 end;
@@ -251,16 +264,7 @@ end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
-  with CurrentContext^ do
-    begin
-      if not FIsArray then
-        begin
-          FIsArray     := True;
-          FArrayLength := ALength;
-        end
-      else if not FIsBytes then
-        raise EProtobufError.Create('Arrays of arrays are not supported in Protobuf');
-    end;
+  CheckBeginArray(ALength);
 end;
 
 procedure TOutputSerializer.EndField;
@@ -283,7 +287,7 @@ begin
     begin
       WrittenCount := FWriter.Skip(0) - FStartPos;
       Assert(WrittenCount >= 0);
-      if (WrittenCount > 0) or FIsRequired then
+      if (WrittenCount > 0) or FIsArray or FIsRequired then
         PackLengthPrefix(WrittenCount)
       else
         FWriter.Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
@@ -307,6 +311,13 @@ end;
 procedure TOutputSerializer.EndStaticArray;
 begin
   CheckEndPackedArray;
+end;
+
+procedure TOutputSerializer.CheckBeginPackedArray;
+begin
+  with CurrentContext^ do
+    if FIsPackedArray and (FArrayLength > 0) then
+      BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
 end;
 
 procedure TOutputSerializer.CheckEndPackedArray;
@@ -382,6 +393,7 @@ begin
   if FFieldRecursion >= 0 then
     begin
       InitializeTypeFlags(AType);
+      CheckPackEmptyBytes;
       CheckBeginPackedArray;
     end
   else if AType.TypeKind <> tkRecord then
@@ -393,7 +405,7 @@ begin
   with CurrentContext^ do
     begin
       FIsByte   := AType.Handle = TypeInfo(Byte);
-      FIsBytes  := AType.Handle = TypeInfo(TBytes);
+      FIsBytes  := AType.Handle = TypeInfo(Bytes);
       FIsSigned := (AType.Handle = TypeInfo(SInt32)) or (AType.Handle = TypeInfo(SInt64));
       FIsFixed  :=
         (AType.Handle = TypeInfo(Fixed32)) or (AType.Handle = TypeInfo(SFixed32)) or
@@ -403,16 +415,14 @@ begin
     end;
 end;
 
-procedure TOutputSerializer.CheckBeginPackedArray;
+procedure TOutputSerializer.CheckPackEmptyBytes;
 begin
   with CurrentContext^ do
-    if FIsArray and FIsByte and FIsRequired and (FArrayLength = 0) then // handle empty required bytes
+    if FIsArray and FIsByte and (FArrayLength = 0) and (FIsRequired or FIsArrayOfBytes) then
       begin
         FWriter.Pack(TWireType.LengthPrefixed, FFieldTag);
         FWriter.Pack(VarInt(0));
-      end
-    else if FIsPackedArray and (FArrayLength > 0) then // handle non-empty packed array
-      BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+      end;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);

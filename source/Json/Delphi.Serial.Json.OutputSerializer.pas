@@ -14,13 +14,14 @@ type
 
   TFieldContext = record
     FFieldName: string;
+    FEnumName: string;
     FIsRequired: Boolean;
     FIsRecord: Boolean;
-    FIsArray: Boolean;
     FIsBoolean: Boolean;
     FIsByte: Boolean;
+    FIsArray: Boolean;
+    FArrayLength: Integer;
     FValueStarted: Boolean;
-    FEnumName: string;
   end;
 
   PFieldContext = ^TFieldContext;
@@ -45,11 +46,12 @@ type
       FJsonWriter    : TJsonTextWriter;
       FFieldContexts : TArray<TFieldContext>;
       FFieldRecursion: Integer;
-      FLastStarted   : Integer;
+      FFieldStarted  : Integer;
 
       function CurrentContext: PFieldContext; inline;
       procedure SetIndentation(AValue: Integer);
       procedure CheckStartValue;
+      procedure CheckStartArray;
       procedure CheckEndArray;
 
       procedure Value(var AValue: Int8); overload;
@@ -159,13 +161,17 @@ procedure TOutputSerializer.BeginAll;
 begin
   FJsonWriter.Rewind;
   FFieldRecursion := 0;
-  FLastStarted    := 0;
+  FFieldStarted   := 0;
   CurrentContext^ := Default (TFieldContext);
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
-  CurrentContext.FIsArray := True;
+  with CurrentContext^ do
+    begin
+      FIsArray     := True;
+      FArrayLength := ALength;
+    end;
 end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
@@ -192,7 +198,11 @@ end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
-  CurrentContext.FIsArray := True;
+  with CurrentContext^ do
+    begin
+      FIsArray     := True;
+      FArrayLength := ALength;
+    end;
 end;
 
 procedure TOutputSerializer.DataType(AType: TRttiType);
@@ -201,7 +211,22 @@ begin
     begin
       FIsBoolean := AType.Handle = TypeInfo(Boolean);
       FIsByte    := AType.Handle = TypeInfo(Byte);
+      if FIsArray then
+        CheckStartArray;
     end;
+end;
+
+procedure TOutputSerializer.CheckStartArray;
+begin
+  with CurrentContext^ do
+    if (FArrayLength > 0) or FValueStarted or FIsRequired then
+      begin
+        CheckStartValue;
+        if not FIsByte then
+          FJsonWriter.WriteStartArray
+        else if FArrayLength = 0 then
+          FJsonWriter.WriteValue([]);
+      end;
 end;
 
 procedure TOutputSerializer.EndAll;
@@ -217,27 +242,18 @@ end;
 procedure TOutputSerializer.CheckEndArray;
 begin
   with CurrentContext^ do
-    begin
-      Assert(FIsArray);
-      if FValueStarted and not FIsByte then
-        FJsonWriter.WriteEndArray
-      else if FIsRequired then
-        begin
-          CheckStartValue;
-          if FIsByte then
-            FJsonWriter.WriteValue([])
-          else
-            FJsonWriter.WriteEndArray;
-        end;
-    end;
+    if FIsByte then
+      FIsByte := False // byte should be the innermost element type
+    else if FValueStarted then
+      FJsonWriter.WriteEndArray;
 end;
 
 procedure TOutputSerializer.EndField;
 begin
   Assert(FFieldRecursion > 0);
   Dec(FFieldRecursion);
-  if FLastStarted > FFieldRecursion then
-    FLastStarted := FFieldRecursion;
+  if FFieldStarted > FFieldRecursion then
+    FFieldStarted := FFieldRecursion;
 end;
 
 procedure TOutputSerializer.EndRecord;
@@ -253,20 +269,18 @@ end;
 
 procedure TOutputSerializer.CheckStartValue;
 begin
-  while FLastStarted <= FFieldRecursion do
+  while FFieldStarted <= FFieldRecursion do
     begin
-      with FFieldContexts[FLastStarted] do
+      with FFieldContexts[FFieldStarted] do
         if not FValueStarted then
           begin
             FValueStarted := True;
             if not FFieldName.IsEmpty then
               FJsonWriter.WritePropertyName(FFieldName);
-            if FIsArray and not FIsByte then
-              FJsonWriter.WriteStartArray;
             if FIsRecord then
               FJsonWriter.WriteStartObject;
           end;
-      Inc(FLastStarted);
+      Inc(FFieldStarted);
     end;
 end;
 
