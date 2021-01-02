@@ -178,7 +178,16 @@ end;
 
 procedure TOutputSerializer.BeginRecord;
 begin
-  CurrentContext.FIsRecord := True;
+  with CurrentContext^ do
+    begin
+      if FIsArray then
+        begin
+          CheckStartValue;
+          FJsonWriter.WriteStartObject;
+        end
+      else
+        FIsRecord := True;
+    end;
 end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
@@ -208,16 +217,19 @@ end;
 procedure TOutputSerializer.CheckEndArray;
 begin
   with CurrentContext^ do
-    if FValueStarted and not FIsByte then
-      FJsonWriter.WriteEndArray
-    else if FIsRequired then
-      begin
-        CheckStartValue;
-        if FIsByte then
-          FJsonWriter.WriteValue([])
-        else
-          FJsonWriter.WriteEndArray;
-      end;
+    begin
+      Assert(FIsArray);
+      if FValueStarted and not FIsByte then
+        FJsonWriter.WriteEndArray
+      else if FIsRequired then
+        begin
+          CheckStartValue;
+          if FIsByte then
+            FJsonWriter.WriteValue([])
+          else
+            FJsonWriter.WriteEndArray;
+        end;
+    end;
 end;
 
 procedure TOutputSerializer.EndField;
@@ -230,9 +242,8 @@ end;
 
 procedure TOutputSerializer.EndRecord;
 begin
-  with CurrentContext^ do
-    if FIsRecord and FValueStarted then
-      FJsonWriter.WriteEndObject;
+  if CurrentContext.FValueStarted then
+    FJsonWriter.WriteEndObject;
 end;
 
 procedure TOutputSerializer.EndStaticArray;
@@ -253,7 +264,7 @@ begin
             if FIsArray and not FIsByte then
               FJsonWriter.WriteStartArray;
             if FIsRecord then
-              FJsonWriter.WriteStartObject
+              FJsonWriter.WriteStartObject;
           end;
       Inc(FLastStarted);
     end;

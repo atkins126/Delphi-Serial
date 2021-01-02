@@ -5,7 +5,9 @@ program DelphiSerialUnitTest;
 {$ENDIF}
 {$STRONGLINKTYPES ON}
 uses
+{$IFDEF DEBUG}
   FastMM4,
+{$ENDIF}
   System.SysUtils,
   {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,

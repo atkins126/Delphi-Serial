@@ -28,6 +28,9 @@ type
 
 implementation
 
+uses
+  System.Math;
+
 { TReader }
 
 constructor TReader.Create(AStream: TCustomMemoryStream);

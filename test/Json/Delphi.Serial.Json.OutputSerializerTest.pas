@@ -58,12 +58,12 @@ const
 var
   Addressbook: TAddressBook;
 begin
-  Addressbook.FPeople := Addressbook.FPeople + [CPerson];
+  Addressbook.FPeople := Addressbook.FPeople + [CPerson, CPerson];
   FVisitor.Visit(Addressbook);
-  Assert.AreEqual<Int64>(110, FStream.Position);
+  Assert.AreEqual<Int64>(199, FStream.Position);
   FStream.Position := 0;
   FVisitor.Visit(Addressbook); // test reusing the serializer
-  Assert.AreEqual<Int64>(110, FStream.Position);
+  Assert.AreEqual<Int64>(199, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('addressbook.json');
 end;

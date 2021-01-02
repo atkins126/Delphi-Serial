@@ -116,6 +116,7 @@ type
 implementation
 
 uses
+  System.Math,
   Delphi.Serial.Protobuf.Types;
 
 { TSerializerTest }
