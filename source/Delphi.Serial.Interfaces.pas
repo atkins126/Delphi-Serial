@@ -1,10 +1,12 @@
-unit Delphi.Serial.RttiObserver;
+unit Delphi.Serial.Interfaces;
 
 {$IFDEF DEBUG}{$M+}{$ENDIF}
+
 
 interface
 
 uses
+  System.Classes,
   System.Rtti;
 
 type
@@ -47,6 +49,14 @@ type
     procedure DataType(AType: TRttiType);
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);
+  end;
+
+  ISerializer = interface(IRttiObserver)
+    procedure SetStream(AStream: TStream);
+    procedure SetOption(const AName: string; AValue: Variant);
+
+    property Stream: TStream write SetStream;
+    property Option[const AName: string]: Variant write SetOption; default;
   end;
 
 implementation

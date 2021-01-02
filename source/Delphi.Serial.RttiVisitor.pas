@@ -3,7 +3,7 @@ unit Delphi.Serial.RttiVisitor;
 interface
 
 uses
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial.Interfaces,
   System.Rtti;
 
 type
@@ -38,6 +38,7 @@ type
 implementation
 
 uses
+  Delphi.Profile,
   System.TypInfo;
 
 {$POINTERMATH ON}
@@ -46,17 +47,20 @@ uses
 
 procedure TRttiVisitor.Initialize(AObserver: IRttiObserver);
 begin
+  Trace('TRttiVisitor.Initialize');
   FObserver := AObserver;
   FContext  := TRttiContext.Create;
 end;
 
 procedure TRttiVisitor.Visit<T>(var AValue: T);
 begin
+  Trace('TRttiVisitor.Visit<T>');
   Visit(Addr(AValue), TypeInfo(T));
 end;
 
 procedure TRttiVisitor.Visit(AValue, ATypeInfo: Pointer);
 begin
+  Trace('TRttiVisitor.Initialize');
   FObserver.BeginAll;
   try
     VisitType(AValue, FContext.GetType(ATypeInfo));
@@ -69,6 +73,7 @@ procedure TRttiVisitor.VisitType(AInstance: Pointer; AType: TRttiType; ACount: I
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.VisitType');
   if not Assigned(AType) then
     Exit;
 
@@ -109,6 +114,7 @@ var
   Attribute: TCustomAttribute;
   Field    : TRttiField;
 begin
+  Trace('TRttiVisitor.Visit: TRttiRecordType');
   FObserver.BeginRecord;
   if not FObserver.SkipAttributes then
     for Attribute in AType.GetAttributes do
@@ -122,6 +128,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AField: TRttiField);
 var
   Attribute: TCustomAttribute;
 begin
+  Trace('TRttiVisitor.Visit: TRttiField');
   FObserver.BeginField(AField.Name);
   if not FObserver.SkipAttributes then
     for Attribute in AField.GetAttributes do
@@ -135,6 +142,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiStringType; ACount:
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiStringType');
   case AType.StringKind of
     skShortString:
       for I := 0 to ACount - 1 do
@@ -155,6 +163,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiFloatType; ACount: 
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiFloatType');
   case AType.FloatType of
     ftSingle:
       for I := 0 to ACount - 1 do
@@ -178,6 +187,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiInt64Type; ACount: 
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiInt64Type');
   if AType.MinValue < 0 then
     for I := 0 to ACount - 1 do
       FObserver.Value(PInt64(AInstance)[I])
@@ -190,6 +200,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiOrdinalType');
   case AType.OrdType of
     otSByte:
       for I := 0 to ACount - 1 do
@@ -217,6 +228,7 @@ end;
 
 procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiEnumerationType; ACount: Integer);
 begin
+  Trace('TRttiVisitor.Visit: TRttiEnumerationType');
   Assert(AType.UnderlyingType is TRttiOrdinalType);
   if not FObserver.SkipEnumNames then
     Visit(AInstance, AType.UnderlyingType as TRttiOrdinalType, ACount, AType.Handle);
@@ -227,6 +239,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiSetType; ACount: In
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiSetType');
   for I := 0 to ACount - 1 do
     FObserver.Value(PByte(AInstance) + I * AType.TypeSize, ACount);
 end;
@@ -235,6 +248,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount
 var
   I: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiOrdinalType + AEnumTypeInfo');
   case AType.OrdType of
     otSByte, otUByte:
       for I := 0 to ACount - 1 do
@@ -252,6 +266,7 @@ class function TRttiVisitor.GetEnumName(AType: TRttiOrdinalType; AEnumTypeInfo: 
 const
   CUnknownName = '[Unknown]';
 begin
+  Trace('TRttiVisitor.GetEnumName');
   if (Value >= AType.MinValue) and (Value <= AType.MaxValue) then
     Result := System.TypInfo.GetEnumName(AEnumTypeInfo, Value)
   else
@@ -262,6 +277,7 @@ procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiArrayType);
 var
   Count: Integer;
 begin
+  Trace('TRttiVisitor.Visit: TRttiArrayType');
   Count := AType.TotalElementCount;
   FObserver.BeginStaticArray(Count);
   VisitType(AInstance, AType.ElementType, Count, True);
@@ -273,6 +289,7 @@ var
   Count : Integer;
   Length: NativeInt;
 begin
+  Trace('TRttiVisitor.Visit: TRttiDynamicArrayType');
   if not Assigned(AInstance) then           // handle the case of visiting an array with zero sub-arrays
     begin
       Count := - 1;                         // indicate that there is no instance of this sub-array type

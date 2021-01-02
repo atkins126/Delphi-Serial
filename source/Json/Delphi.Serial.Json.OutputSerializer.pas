@@ -105,6 +105,7 @@ type
 implementation
 
 uses
+  Delphi.Profile,
   Delphi.Serial.Factory,
   System.Json.Types,
   System.SysUtils,
@@ -126,11 +127,13 @@ end;
 
 constructor TOutputSerializer.Create;
 begin
+  Trace('TOutputSerializer.Create');
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
 end;
 
 destructor TOutputSerializer.Destroy;
 begin
+  Trace('TOutputSerializer.Destroy');
   FJsonWriter.Free; // the underlying stream could be accessed here if we did not properly flush the writer
   inherited;
 end;
@@ -143,6 +146,7 @@ end;
 
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
+  Trace('TOutputSerializer.Attribute');
   if AAttribute is FieldAttribute then
     begin
       if FFieldRecursion = 0 then
@@ -159,6 +163,7 @@ end;
 
 procedure TOutputSerializer.BeginAll;
 begin
+  Trace('TOutputSerializer.BeginAll');
   FJsonWriter.Rewind;
   FFieldRecursion := 0;
   FFieldStarted   := 0;
@@ -167,6 +172,7 @@ end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
+  Trace('TOutputSerializer.BeginDynamicArray');
   with CurrentContext^ do
     begin
       FIsArray     := True;
@@ -176,6 +182,7 @@ end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
 begin
+  Trace('TOutputSerializer.BeginField');
   Inc(FFieldRecursion);
   if FFieldRecursion = Length(FFieldContexts) then
     SetLength(FFieldContexts, 2 * FFieldRecursion);
@@ -184,6 +191,7 @@ end;
 
 procedure TOutputSerializer.BeginRecord;
 begin
+  Trace('TOutputSerializer.BeginRecord');
   with CurrentContext^ do
     begin
       if FIsArray then
@@ -198,6 +206,7 @@ end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
+  Trace('TOutputSerializer.BeginStaticArray');
   with CurrentContext^ do
     begin
       FIsArray     := True;
@@ -207,6 +216,7 @@ end;
 
 procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
+  Trace('TOutputSerializer.DataType');
   with CurrentContext^ do
     begin
       FIsBoolean := AType.Handle = TypeInfo(Boolean);
@@ -218,6 +228,7 @@ end;
 
 procedure TOutputSerializer.CheckStartArray;
 begin
+  Trace('TOutputSerializer.CheckStartArray');
   with CurrentContext^ do
     if (FArrayLength > 0) or FValueStarted or FIsRequired then
       begin
@@ -231,16 +242,19 @@ end;
 
 procedure TOutputSerializer.EndAll;
 begin
+  Trace('TOutputSerializer.EndAll');
   FJsonWriter.Close;
 end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
+  Trace('TOutputSerializer.EndDynamicArray');
   CheckEndArray;
 end;
 
 procedure TOutputSerializer.CheckEndArray;
 begin
+  Trace('TOutputSerializer.CheckEndArray');
   with CurrentContext^ do
     if FIsByte then
       FIsByte := False // byte should be the innermost element type
@@ -250,6 +264,7 @@ end;
 
 procedure TOutputSerializer.EndField;
 begin
+  Trace('TOutputSerializer.EndField');
   Assert(FFieldRecursion > 0);
   Dec(FFieldRecursion);
   if FFieldStarted > FFieldRecursion then
@@ -258,17 +273,20 @@ end;
 
 procedure TOutputSerializer.EndRecord;
 begin
+  Trace('TOutputSerializer.EndRecord');
   if CurrentContext.FValueStarted then
     FJsonWriter.WriteEndObject;
 end;
 
 procedure TOutputSerializer.EndStaticArray;
 begin
+  Trace('TOutputSerializer.EndStaticArray');
   CheckEndArray;
 end;
 
 procedure TOutputSerializer.CheckStartValue;
 begin
+  Trace('TOutputSerializer.CheckStartValue');
   while FFieldStarted <= FFieldRecursion do
     begin
       with FFieldContexts[FFieldStarted] do
@@ -286,11 +304,13 @@ end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
 begin
+  Trace('TOutputSerializer.EnumName');
   CurrentContext.FEnumName := AName;
 end;
 
 procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
+  Trace('TOutputSerializer.SetOption');
   case TOutputOption.From(AName) of
     TOutputOption.Indentation:
       SetIndentation(AValue);
@@ -299,6 +319,7 @@ end;
 
 procedure TOutputSerializer.SetIndentation(AValue: Integer);
 begin
+  Trace('TOutputSerializer.SetIndentation');
   if AValue >= 0 then
     begin
       FJsonWriter.Formatting  := TJsonFormatting.Indented;
@@ -310,27 +331,32 @@ end;
 
 procedure TOutputSerializer.SetStream(AStream: TStream);
 begin
+  Trace('TOutputSerializer.SetStream');
   FreeAndNil(FJsonWriter);
   FJsonWriter := TJsonTextWriter.Create(AStream);
 end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
 begin
+  Trace('TOutputSerializer.SkipAttributes');
   Result := False;
 end;
 
 function TOutputSerializer.SkipEnumNames: Boolean;
 begin
+  Trace('TOutputSerializer.SkipEnumNames');
   Result := False;
 end;
 
 function TOutputSerializer.SkipField: Boolean;
 begin
+  Trace('TOutputSerializer.SkipField');
   Result := CurrentContext.FFieldName.IsEmpty;
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
+  Trace('TOutputSerializer.Value: Int8');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -341,6 +367,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
+  Trace('TOutputSerializer.Value: Int16');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -351,6 +378,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
+  Trace('TOutputSerializer.Value: Int32');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -361,6 +389,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
+  Trace('TOutputSerializer.Value: Int64');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -371,6 +400,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
+  Trace('TOutputSerializer.Value: UInt8');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -386,6 +416,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
+  Trace('TOutputSerializer.Value: UInt16');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -399,6 +430,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
+  Trace('TOutputSerializer.Value: UInt32');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -412,6 +444,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
+  Trace('TOutputSerializer.Value: UInt64');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -422,6 +455,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: ShortString);
 begin
+  Trace('TOutputSerializer.Value: ShortString');
   with CurrentContext^ do
     if (AValue = '') and (not FIsArray) and not FIsRequired then
       Exit;
@@ -431,6 +465,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: AnsiString);
 begin
+  Trace('TOutputSerializer.Value: AnsiString');
   with CurrentContext^ do
     if (AValue <> '') or FIsArray or FIsRequired then
       begin
@@ -441,6 +476,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: WideString);
 begin
+  Trace('TOutputSerializer.Value: WideString');
   with CurrentContext^ do
     if (AValue <> '') or FIsArray or FIsRequired then
       begin
@@ -451,6 +487,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UnicodeString);
 begin
+  Trace('TOutputSerializer.Value: UnicodeString');
   with CurrentContext^ do
     if (AValue <> '') or FIsArray or FIsRequired then
       begin
@@ -463,6 +500,7 @@ procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 var
   Bytes: TBytes;
 begin
+  Trace('TOutputSerializer.Value: AByteCount');
   with CurrentContext^ do
     if (AByteCount <> 0) or FIsArray or FIsRequired then
       begin
@@ -475,6 +513,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
+  Trace('TOutputSerializer.Value: Currency');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -485,6 +524,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
+  Trace('TOutputSerializer.Value: Single');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -495,6 +535,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
+  Trace('TOutputSerializer.Value: Double');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -505,6 +546,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Extended);
 begin
+  Trace('TOutputSerializer.Value: Extended');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -515,6 +557,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
+  Trace('TOutputSerializer.Value: Comp');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin

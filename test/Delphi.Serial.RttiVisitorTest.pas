@@ -7,7 +7,7 @@ interface
 uses
   DUnitX.TestFramework,
   Delphi.Mocks,
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial.Interfaces,
   Delphi.Serial.RttiVisitor;
 
 type

@@ -5,15 +5,13 @@ program DelphiSerialUnitTest;
 {$ENDIF}
 {$STRONGLINKTYPES ON}
 uses
-{$IFDEF DEBUG}
   FastMM4,
-{$ENDIF}
   System.SysUtils,
   {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
   {$ELSE}
   DUnitX.Loggers.Console,
-  DUnitX.Loggers.Xml.NUnit,
+  DUnitX.Loggers.Xml.JUnit,
   {$ENDIF }
   DUnitX.TestFramework,
   Delphi.Serial.RttiVisitorTest in '..\test\Delphi.Serial.RttiVisitorTest.pas',
@@ -30,12 +28,9 @@ var
   runner: ITestRunner;
   results: IRunResults;
   logger: ITestLogger;
-  nunitLogger : ITestLogger;
+  junitLogger : ITestLogger;
 {$ENDIF}
 begin
-{$IFDEF DEBUG}
-  ReportMemoryLeaksOnShutdown := True;
-{$ENDIF}
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
 {$ELSE}
@@ -56,8 +51,8 @@ begin
       logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
       runner.AddLogger(logger);
     end;
-    //Generate an NUnit compatible XML File
-    nunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
+    //Generate an JUnit compatible XML File
+    junitLogger := TDUnitXXMLJUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     runner.AddLogger(nunitLogger);
 
     //Run tests

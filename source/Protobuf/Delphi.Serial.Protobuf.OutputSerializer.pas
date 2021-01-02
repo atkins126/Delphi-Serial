@@ -31,7 +31,7 @@ type
     FOneofCase: Integer;
     FOneofFieldIndex: Integer;
     FIsArrayOfBytes: Boolean;
-    procedure Initialize(const AName: string);
+    procedure Initialize(const AName: string); inline;
   end;
 
   PFieldContext = ^TFieldContext;
@@ -127,6 +127,7 @@ type
 implementation
 
 uses
+  Delphi.Profile,
   Delphi.Serial.Factory,
   Delphi.Serial.Protobuf.Types,
   System.TypInfo;
@@ -167,12 +168,14 @@ end;
 
 constructor TOutputSerializer.Create;
 begin
+  Trace('TOutputSerializer.Create');
   SetLength(FFieldContexts, CInitialFieldRecursionCount);
   FFieldRecursion := - 1;
 end;
 
 destructor TOutputSerializer.Destroy;
 begin
+  Trace('TOutputSerializer.Destroy');
   FWriter.Free;
   inherited;
 end;
@@ -191,6 +194,7 @@ end;
 
 procedure TOutputSerializer.Attribute(const AAttribute: TCustomAttribute);
 begin
+  Trace('TOutputSerializer.Attribute');
   if AAttribute is FieldAttribute then
     begin
       if FFieldRecursion < 0 then
@@ -211,6 +215,7 @@ end;
 
 procedure TOutputSerializer.BeginField(const AName: string);
 begin
+  Trace('TOutputSerializer.BeginField');
   Inc(FFieldRecursion);
   if FFieldRecursion = Length(FFieldContexts) then
     SetLength(FFieldContexts, 2 * FFieldRecursion);
@@ -219,12 +224,14 @@ end;
 
 procedure TOutputSerializer.BeginRecord;
 begin
+  Trace('TOutputSerializer.BeginRecord');
   if (FFieldRecursion >= 0) and not CurrentContext.FIsOneof then
     BeginLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.BeginLengthPrefixedWithUnknownSize;
 begin
+  Trace('TOutputSerializer.BeginLengthPrefixedWithUnknownSize');
   with CurrentContext^ do
     begin
       FBeforePos := FWriter.Skip(0);
@@ -235,11 +242,13 @@ end;
 
 procedure TOutputSerializer.BeginStaticArray(ALength: Integer);
 begin
+  Trace('TOutputSerializer.BeginStaticArray');
   CheckBeginArray(ALength);
 end;
 
 procedure TOutputSerializer.CheckBeginArray(ALength: Integer);
 begin
+  Trace('TOutputSerializer.CheckBeginArray');
   with CurrentContext^ do
     begin
       if not FIsArray then
@@ -259,22 +268,26 @@ end;
 
 procedure TOutputSerializer.BeginAll;
 begin
+  Trace('TOutputSerializer.BeginAll');
   FFieldRecursion := - 1;
 end;
 
 procedure TOutputSerializer.BeginDynamicArray(var ALength: Integer);
 begin
+  Trace('TOutputSerializer.BeginDynamicArray');
   CheckBeginArray(ALength);
 end;
 
 procedure TOutputSerializer.EndField;
 begin
+  Trace('TOutputSerializer.EndField');
   Assert(FFieldRecursion >= 0);
   Dec(FFieldRecursion);
 end;
 
 procedure TOutputSerializer.EndRecord;
 begin
+  Trace('TOutputSerializer.EndRecord');
   if (FFieldRecursion >= 0) and not CurrentContext.FIsOneof then
     EndLengthPrefixedWithUnknownSize;
 end;
@@ -283,6 +296,7 @@ procedure TOutputSerializer.EndLengthPrefixedWithUnknownSize;
 var
   WrittenCount: Integer;
 begin
+  Trace('TOutputSerializer.EndLengthPrefixedWithUnknownSize');
   with CurrentContext^ do
     begin
       WrittenCount := FWriter.Skip(0) - FStartPos;
@@ -299,6 +313,7 @@ var
   LengthPrefix: VarInt;
   PrefixDiff  : Integer;
 begin
+  Trace('TOutputSerializer.PackLengthPrefix');
   LengthPrefix := VarInt(WrittenCount);
   PrefixDiff   := LengthPrefix.Count - CLengthPrefixReservedSize;
   FWriter.Skip(- WrittenCount);
@@ -310,11 +325,13 @@ end;
 
 procedure TOutputSerializer.EndStaticArray;
 begin
+  Trace('TOutputSerializer.EndStaticArray');
   CheckEndPackedArray;
 end;
 
 procedure TOutputSerializer.CheckBeginPackedArray;
 begin
+  Trace('TOutputSerializer.CheckBeginPackedArray');
   with CurrentContext^ do
     if FIsPackedArray and (FArrayLength > 0) then
       BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
@@ -322,6 +339,7 @@ end;
 
 procedure TOutputSerializer.CheckEndPackedArray;
 begin
+  Trace('TOutputSerializer.CheckEndPackedArray');
   with CurrentContext^ do
     if FIsPackedArray and (FArrayLength > 0) then
       EndLengthPrefixedWithUnknownSize;
@@ -329,26 +347,31 @@ end;
 
 procedure TOutputSerializer.EndAll;
 begin
+  Trace('TOutputSerializer.EndAll');
   FWriter.Truncate;
 end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
+  Trace('TOutputSerializer.EndDynamicArray');
   CheckEndPackedArray;
 end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
 begin
+  Trace('TOutputSerializer.EnumName');
   Assert(False); // should not be called
 end;
 
 function TOutputSerializer.SkipEnumNames: Boolean;
 begin
+  Trace('TOutputSerializer.SkipEnumNames');
   Result := True;
 end;
 
 function TOutputSerializer.SkipField: Boolean;
 begin
+  Trace('TOutputSerializer.SkipField');
   with CurrentContext^ do
     if FIsOneof then
       Result := False
@@ -369,6 +392,7 @@ end;
 
 procedure TOutputSerializer.SetOption(const AName: string; AValue: Variant);
 begin
+  Trace('TOutputSerializer.SetOption');
   case TOutputOption.From(AName) of
     TOutputOption.LimitMemoryUsage:
       FLimitMemoryUsage := AValue;
@@ -377,6 +401,7 @@ end;
 
 procedure TOutputSerializer.SetStream(AStream: TStream);
 begin
+  Trace('TOutputSerializer.SetStream');
   if not (AStream is TCustomMemoryStream) then
     raise EProtobufError.Create('The output stream must be a memory stream');
   FreeAndNil(FWriter);
@@ -385,11 +410,13 @@ end;
 
 function TOutputSerializer.SkipAttributes: Boolean;
 begin
+  Trace('TOutputSerializer.SkipAttributes');
   Result := False;
 end;
 
 procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
+  Trace('TOutputSerializer.DataType');
   if FFieldRecursion >= 0 then
     begin
       InitializeTypeFlags(AType);
@@ -402,6 +429,7 @@ end;
 
 procedure TOutputSerializer.InitializeTypeFlags(AType: TRttiType);
 begin
+  Trace('TOutputSerializer.InitializeTypeFlags');
   with CurrentContext^ do
     begin
       FIsByte   := AType.Handle = TypeInfo(Byte);
@@ -417,6 +445,7 @@ end;
 
 procedure TOutputSerializer.CheckPackEmptyBytes;
 begin
+  Trace('TOutputSerializer.CheckPackEmptyBytes');
   with CurrentContext^ do
     if FIsArray and FIsByte and (FArrayLength = 0) and (FIsRequired or FIsArrayOfBytes) then
       begin
@@ -427,6 +456,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);
 begin
+  Trace('TOutputSerializer.Value: Int8');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -438,6 +468,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int16);
 begin
+  Trace('TOutputSerializer.Value: Int16');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -449,6 +480,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int32);
 begin
+  Trace('TOutputSerializer.Value: Int32');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       if FIsSigned then
@@ -473,6 +505,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Int64);
 begin
+  Trace('TOutputSerializer.Value: Int64');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       if FIsSigned then
@@ -497,6 +530,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt8);
 begin
+  Trace('TOutputSerializer.Value: UInt8');
   with CurrentContext^ do
     if FIsOneof then // we are handling the case field of a oneof record
       begin
@@ -514,6 +548,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt16);
 begin
+  Trace('TOutputSerializer.Value: UInt16');
   with CurrentContext^ do
     if FIsOneof then // we are handling the case field of a oneof record
       begin
@@ -531,6 +566,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt32);
 begin
+  Trace('TOutputSerializer.Value: UInt32');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       if FIsFixed then
@@ -549,6 +585,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: UInt64);
 begin
+  Trace('TOutputSerializer.Value: UInt64');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       if FIsFixed then
@@ -567,6 +604,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Single);
 begin
+  Trace('TOutputSerializer.Value: Single');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -578,6 +616,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Double);
 begin
+  Trace('TOutputSerializer.Value: Double');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -589,11 +628,13 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Extended);
 begin
+  Trace('TOutputSerializer.Value: Extended');
   raise EProtobufError.Create('Extended is not supported in Protobuf');
 end;
 
 procedure TOutputSerializer.Value(var AValue: Comp);
 begin
+  Trace('TOutputSerializer.Value: Comp');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -605,6 +646,7 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: Currency);
 begin
+  Trace('TOutputSerializer.Value: Currency');
   with CurrentContext^ do
     if (AValue <> 0) or FIsArray or FIsRequired then
       begin
@@ -616,26 +658,31 @@ end;
 
 procedure TOutputSerializer.Value(var AValue: ShortString);
 begin
+  Trace('TOutputSerializer.Value: ShortString');
   Value(PAnsiChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: AnsiString);
 begin
+  Trace('TOutputSerializer.Value: AnsiString');
   Value(PAnsiChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: WideString);
 begin
+  Trace('TOutputSerializer.Value: WideString');
   Utf8Value(PChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(var AValue: UnicodeString);
 begin
+  Trace('TOutputSerializer.Value: UnicodeString');
   Utf8Value(PChar(AValue), Length(AValue));
 end;
 
 procedure TOutputSerializer.Value(AValue: Pointer; AByteCount: Integer);
 begin
+  Trace('TOutputSerializer.Value: AByteCount');
   with CurrentContext^ do
     if (AByteCount <> 0) or FIsArray or FIsRequired then
       begin
@@ -650,6 +697,7 @@ var
   ByteCount: Integer;
   ByteStart: PByte;
 begin
+  Trace('TOutputSerializer.Utf8Value');
   with CurrentContext^ do
     if (ACharCount <> 0) or FIsArray or FIsRequired then
       begin

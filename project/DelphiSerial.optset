@@ -4,6 +4,7 @@
         <DCC_DcpOutput>..\build\$(Platform)\$(Config)\lib</DCC_DcpOutput>
         <DCC_BplOutput>..\build\$(Platform)\$(Config)\lib</DCC_BplOutput>
         <DCC_DcuOutput>..\build\$(Platform)\$(Config)\dcu</DCC_DcuOutput>
+        <DCC_UnitSearchPath>..\modules\Delphi-Profile\source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>

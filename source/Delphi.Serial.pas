@@ -3,9 +3,8 @@ unit Delphi.Serial;
 interface
 
 uses
-  System.Classes,
   System.SysUtils,
-  Delphi.Serial.RttiObserver,
+  Delphi.Serial.Interfaces,
   Delphi.Serial.RttiVisitor;
 
 type
@@ -58,15 +57,8 @@ type
       property Value: Variant read FValue;
   end;
 
-  ISerializer = interface(IRttiObserver)
-    procedure SetStream(AStream: TStream);
-    procedure SetOption(const AName: string; AValue: Variant);
-
-    property Stream: TStream write SetStream;
-    property Option[const AName: string]: Variant write SetOption; default;
-  end;
-
-  TVisitor = TRttiVisitor;
+  TVisitor    = TRttiVisitor;
+  ISerializer = Delphi.Serial.Interfaces.ISerializer;
 
 function CreateSerializer(const AName: string): ISerializer;
 

@@ -32,7 +32,7 @@ requires
 
 contains
   Delphi.Serial.RttiVisitor in '..\source\Delphi.Serial.RttiVisitor.pas',
-  Delphi.Serial.RttiObserver in '..\source\Delphi.Serial.RttiObserver.pas',
+  Delphi.Serial.Interfaces in '..\source\Delphi.Serial.Interfaces.pas',
   Delphi.Serial in '..\source\Delphi.Serial.pas',
   Delphi.Serial.Protobuf.Reader in '..\source\Protobuf\Delphi.Serial.Protobuf.Reader.pas',
   Delphi.Serial.Protobuf.InputSerializer in '..\source\Protobuf\Delphi.Serial.Protobuf.InputSerializer.pas',
