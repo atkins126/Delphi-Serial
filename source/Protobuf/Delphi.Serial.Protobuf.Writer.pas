@@ -20,7 +20,7 @@ type
       procedure Move(ACount, ADisplacement: Integer);
       function Require(ACount: Integer): Pointer;
       function Skip(ACount: Integer): Int64; inline;
-      function Write(const AValue; ACount: Integer): Integer; inline;
+      function Write(const AValue; AByteCount: Integer): Integer; inline;
 
       procedure Pack(AValue: VarInt); overload; inline;
       procedure Pack(AValue: SignedInt); overload; inline;
@@ -71,9 +71,9 @@ begin
   FStream.Size := FStream.Position;
 end;
 
-function TWriter.Write(const AValue; ACount: Integer): Integer;
+function TWriter.Write(const AValue; AByteCount: Integer): Integer;
 begin
-  Result := FStream.Write(AValue, ACount);
+  Result := FStream.Write(AValue, AByteCount);
 end;
 
 procedure TWriter.Pack(AValue: VarInt);

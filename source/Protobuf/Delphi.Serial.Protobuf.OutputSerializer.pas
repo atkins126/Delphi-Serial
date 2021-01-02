@@ -69,6 +69,9 @@ type
       procedure PackLengthPrefix(WrittenCount: Integer);
       procedure InitializeTypeFlags(AType: TRttiType);
       procedure Utf8Value(AChars: PChar; ACharCount: Integer);
+      procedure CheckIsPackedArray(AType: TRttiType);
+      procedure CheckBeginPackedArray;
+      procedure CheckEndPackedArray;
 
       procedure Value(var AValue: Int8); overload;
       procedure Value(var AValue: Int16); overload;
@@ -280,7 +283,7 @@ begin
     begin
       WrittenCount := FWriter.Skip(0) - FStartPos;
       Assert(WrittenCount >= 0);
-      if (WrittenCount > 0) or FIsArray or FIsRequired then
+      if (WrittenCount > 0) or FIsRequired then
         PackLengthPrefix(WrittenCount)
       else
         FWriter.Skip(FBeforePos - FStartPos); // omit empty value from output and discard the tag that had been packed
@@ -303,8 +306,14 @@ end;
 
 procedure TOutputSerializer.EndStaticArray;
 begin
-  if CurrentContext.FIsPackedArray then
-    EndLengthPrefixedWithUnknownSize;
+  CheckEndPackedArray;
+end;
+
+procedure TOutputSerializer.CheckEndPackedArray;
+begin
+  with CurrentContext^ do
+    if FIsPackedArray and (FArrayLength > 0) then
+      EndLengthPrefixedWithUnknownSize;
 end;
 
 procedure TOutputSerializer.EndAll;
@@ -314,8 +323,7 @@ end;
 
 procedure TOutputSerializer.EndDynamicArray;
 begin
-  if CurrentContext.FIsPackedArray then
-    EndLengthPrefixedWithUnknownSize;
+  CheckEndPackedArray;
 end;
 
 procedure TOutputSerializer.EnumName(const AName: string);
@@ -373,35 +381,46 @@ procedure TOutputSerializer.DataType(AType: TRttiType);
 begin
   if FFieldRecursion >= 0 then
     begin
-      InitializeTypeFlags(AType);
-      if CurrentContext.FIsPackedArray then
-        BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
+      CheckIsPackedArray(AType);
+      InitializeTypeFlags(AType); // must be done after checking for packed array
+      CheckBeginPackedArray;
     end
   else if AType.TypeKind <> tkRecord then
     raise EProtobufError.Create('Only records can be serialized in Protobuf');
+end;
+
+procedure TOutputSerializer.CheckIsPackedArray(AType: TRttiType);
+begin
+  with CurrentContext^ do
+    if FIsArray then
+      begin
+        if not FIsBytes then
+          FIsPackedArray := (not FIsUnPacked) and (AType.TypeKind in CPackableElementTypeKinds)
+        else if (FArrayLength = 0) and FIsRequired then // handle the case of an empty required bytes field
+          begin
+            FWriter.Pack(TWireType.LengthPrefixed, FFieldTag);
+            FWriter.Pack(VarInt(0));
+          end;
+      end;
 end;
 
 procedure TOutputSerializer.InitializeTypeFlags(AType: TRttiType);
 begin
   with CurrentContext^ do
     begin
+      FIsBytes  := AType.Handle = TypeInfo(TBytes);
       FIsSigned := (AType.Handle = TypeInfo(SInt32)) or (AType.Handle = TypeInfo(SInt64));
       FIsFixed  :=
         (AType.Handle = TypeInfo(Fixed32)) or (AType.Handle = TypeInfo(SFixed32)) or
         (AType.Handle = TypeInfo(Fixed64)) or (AType.Handle = TypeInfo(SFixed64));
-      if not FIsArray then
-        FIsBytes := AType.Handle = TypeInfo(TBytes)
-      else if FIsBytes and FIsRequired and (FArrayLength = 0) then
-        begin
-          FWriter.Pack(TWireType.LengthPrefixed, FFieldTag);
-          FWriter.Pack(VarInt(0));
-        end
-      else
-        begin
-          FIsBytes       := AType.Handle = TypeInfo(TBytes);
-          FIsPackedArray := (not FIsUnPacked) and (FArrayLength > 1) and (AType.TypeKind in CPackableElementTypeKinds);
-        end;
     end;
+end;
+
+procedure TOutputSerializer.CheckBeginPackedArray;
+begin
+  with CurrentContext^ do
+    if FIsPackedArray and (FArrayLength > 0) then
+      BeginLengthPrefixedWithUnknownSize; // pack the tag prefix once for the whole array
 end;
 
 procedure TOutputSerializer.Value(var AValue: Int8);

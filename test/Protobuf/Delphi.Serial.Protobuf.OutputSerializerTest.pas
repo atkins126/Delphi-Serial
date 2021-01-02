@@ -84,10 +84,10 @@ begin
   Msg.FRepeated := Msg.FRepeated + [CRepeated];
   Msg.FUnPacked := Msg.FUnPacked + [CUnPacked];
   FVisitor.Visit(Msg);
-  Assert.AreEqual<Int64>(93, FStream.Position);
+  Assert.AreEqual<Int64>(94, FStream.Position);
   FStream.Position := 0;
   FVisitor.Visit(Msg); // test reusing the serializer
-  Assert.AreEqual<Int64>(93, FStream.Position);
+  Assert.AreEqual<Int64>(94, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('message.data');
 end;

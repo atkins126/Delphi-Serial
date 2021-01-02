@@ -13,11 +13,12 @@ type
       FObserver: IRttiObserver;
       FContext : TRttiContext;
 
-      procedure VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer = 1);
+      procedure VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer = 1; AIsArray: Boolean = False);
       procedure Visit(AInstance: Pointer; AType: TRttiRecordType); overload;
       procedure Visit(AInstance: Pointer; AField: TRttiField); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiStringType; ACount: Integer); overload;
-      procedure Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer); overload;
+      procedure Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AIsArray: Boolean = False);
+        overload;
       procedure Visit(AInstance: Pointer; AType: TRttiFloatType; ACount: Integer); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiInt64Type; ACount: Integer); overload;
       procedure Visit(AInstance: Pointer; AType: TRttiEnumerationType; ACount: Integer); overload;
@@ -64,7 +65,7 @@ begin
   end;
 end;
 
-procedure TRttiVisitor.VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer);
+procedure TRttiVisitor.VisitType(AInstance: Pointer; AType: TRttiType; ACount: Integer; AIsArray: Boolean);
 var
   I: Integer;
 begin
@@ -91,7 +92,7 @@ begin
   else if AType is TRttiSetType then
     Visit(AInstance, AType as TRttiSetType, ACount)
   else if AType is TRttiOrdinalType then
-    Visit(AInstance, AType as TRttiOrdinalType, ACount)
+    Visit(AInstance, AType as TRttiOrdinalType, ACount, AIsArray)
   else if AType is TRttiArrayType then
     for I := 0 to ACount - 1 do
       Visit(PByte(AInstance) + I * AType.TypeSize, AType as TRttiArrayType)
@@ -185,7 +186,7 @@ begin
       FObserver.Value(PUInt64(AInstance)[I]);
 end;
 
-procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer);
+procedure TRttiVisitor.Visit(AInstance: Pointer; AType: TRttiOrdinalType; ACount: Integer; AIsArray: Boolean);
 var
   I: Integer;
 begin
@@ -194,7 +195,7 @@ begin
       for I := 0 to ACount - 1 do
         FObserver.Value(PShortint(AInstance)[I]);
     otUByte:
-      if (ACount > 1) and (AType.Handle = TypeInfo(Byte)) then
+      if AIsArray and (AType.Handle = TypeInfo(Byte)) then
         FObserver.Value(AInstance, ACount) // visit byte array as a memory block
       else
         for I := 0 to ACount - 1 do
@@ -263,7 +264,7 @@ var
 begin
   Count := AType.TotalElementCount;
   FObserver.BeginStaticArray(Count);
-  VisitType(AInstance, AType.ElementType, Count);
+  VisitType(AInstance, AType.ElementType, Count, True);
   FObserver.EndStaticArray;
 end;
 
@@ -289,7 +290,7 @@ begin
       Length := Count;
       DynArraySetLength(Pointer(AInstance^), AType.Handle, 1, @Length);
     end;
-  VisitType(Pointer(AInstance^), AType.ElementType, Count);
+  VisitType(Pointer(AInstance^), AType.ElementType, Count, True);
   FObserver.EndDynamicArray;
 end;
 

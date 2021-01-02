@@ -17,7 +17,7 @@ type
       constructor Create(AStream: TCustomMemoryStream);
 
       function Skip(ACount: Integer): Int64; inline;
-      function Read(var AValue; ACount: Integer): Integer; inline;
+      function Read(var AValue; AByteCount: Integer): Integer; inline;
 
       procedure Parse(var AValue: VarInt); overload; inline;
       procedure Parse(var AValue: SignedInt); overload; inline;
@@ -40,9 +40,9 @@ begin
   Result := FStream.Seek(ACount, TSeekOrigin.soCurrent);
 end;
 
-function TReader.Read(var AValue; ACount: Integer): Integer;
+function TReader.Read(var AValue; AByteCount: Integer): Integer;
 begin
-  Result := FStream.Read(AValue, ACount);
+  Result := FStream.Read(AValue, AByteCount);
 end;
 
 procedure TReader.Parse(var AValue: VarInt);

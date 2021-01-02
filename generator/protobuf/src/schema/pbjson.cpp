@@ -1,6 +1,7 @@
 #include "pbjson.h"
 
 #include <fstream>
+#include <sstream>
 
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/util/json_util.h>
@@ -30,11 +31,11 @@ int convert_json_to_binary(google::protobuf::Message &message,
                            const char *inputPath,
                            const char *outputPath)
 {
-    std::string json;
-    std::ifstream(inputPath) >> json;
+    std::stringstream json;
+    json << std::ifstream(inputPath).rdbuf();
     google::protobuf::util::JsonParseOptions options;
     options.case_insensitive_enum_parsing = true;
-    const auto status = google::protobuf::util::JsonStringToMessage(json, &message, options);
+    const auto status = google::protobuf::util::JsonStringToMessage(json.str(), &message, options);
     if (status.ok()) {
         std::ofstream ostream(outputPath, std::ios::binary);
         if (!message.SerializeToOstream(&ostream)) {
