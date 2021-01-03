@@ -1,8 +1,5 @@
 unit Delphi.Serial.Interfaces;
 
-{$IFDEF DEBUG}{$M+}{$ENDIF}
-
-
 interface
 
 uses
@@ -11,6 +8,7 @@ uses
 
 type
 
+{$M+}
   IRttiObserver = interface
     procedure Value(var AValue: Int8); overload;
     procedure Value(var AValue: Int16); overload;
@@ -50,6 +48,7 @@ type
     procedure EnumName(const AName: string);
     procedure Attribute(const AAttribute: TCustomAttribute);
   end;
+{$M-}
 
   ISerializer = interface(IRttiObserver)
     procedure SetStream(AStream: TStream);

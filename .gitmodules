@@ -10,3 +10,6 @@
 [submodule "modules/Delphi-Profile"]
 	path = modules/Delphi-Profile
 	url = git@github.com:dsogari/Delphi-Profile.git
+[submodule "modules/DelphiCodeCoverage"]
+	path = modules/DelphiCodeCoverage
+	url = git@github.com:dsogari/DelphiCodeCoverage.git
