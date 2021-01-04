@@ -12,6 +12,7 @@ uses
   {$ELSE}
   DUnitX.Loggers.Console,
   DUnitX.Loggers.Xml.JUnit,
+  DUnitX.StackTrace.JCL,
   {$ENDIF }
   DUnitX.TestFramework,
   Delphi.Serial.RttiVisitorTest in '..\test\Delphi.Serial.RttiVisitorTest.pas',
