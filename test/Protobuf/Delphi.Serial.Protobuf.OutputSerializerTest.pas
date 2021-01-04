@@ -27,11 +27,15 @@ type
 
       [Test]
       procedure TestSerializeMessage;
+
+      [Test]
+      procedure BenchmarkSerializeMessage;
   end;
 
 implementation
 
 uses
+  Delphi.Profile.PerformanceTracer,
   Delphi.Serial.Protobuf.OutputSerializer,
   Schema.Addressbook.Proto,
   Schema.Message.Proto;
@@ -90,6 +94,30 @@ begin
   Assert.AreEqual<Int64>(99, FStream.Position);
   FStream.Position := 0;
 //  FStream.SaveToFile('message.data');
+end;
+
+procedure TOutputSerializerTest.BenchmarkSerializeMessage;
+const
+  COptional: TOptional = (FFloat: 0.1; FBytes: [1, 2]);
+  CDefault: TDefault   = (FFloat: 0.1; FBytes: [1]);
+  CRequired: TRequired = (FFloat: 0);
+  CRepeated: TRepeated = (FFloat: [0.1]);
+  CUnPacked: TUnPacked = (FFloat: [0.1]);
+var
+  Msg: TMessage;
+  I  : Integer;
+begin
+  Msg.FOptional := Msg.FOptional + [COptional];
+  Msg.FDefault  := Msg.FDefault + [CDefault];
+  Msg.FRequired := Msg.FRequired + [CRequired];
+  Msg.FRepeated := Msg.FRepeated + [CRepeated];
+  Msg.FUnPacked := Msg.FUnPacked + [CUnPacked];
+  for I         := 1 to 1000 do
+    begin
+      FVisitor.Visit(Msg);
+      Assert.AreEqual<Int64>(101, FStream.Position);
+      FStream.Position := 0;
+    end;
 end;
 
 initialization
